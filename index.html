@@ -102,6 +102,7 @@
             text-align: left;
             border-bottom: 1px solid #000;
             font-size: 14px;
+            white-space: nowrap; /* Megakadályozza a sorok tördelését */
         }
 
         th {
@@ -116,7 +117,7 @@
         <div class="header">
             <img src="remenyi.png" alt="Reményi Csomagolástechnika">
             <button class="export-btn" onclick="exportToCSV()">
-                Importálás
+                Exportálás
                 <img src="excel.png" alt="Excel ikon">
             </button>
         </div>
@@ -181,6 +182,23 @@
         function loadData() {
             const savedData = localStorage.getItem("komissioData");
             if (savedData) document.getElementById("table-body").innerHTML = JSON.parse(savedData).join("");
+        }
+
+        function exportToCSV() {
+            let csvContent = "Dátum,Komissiózó,Visszaig.szám\n";
+            const rows = document.querySelectorAll("table tbody tr");
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll("td");
+                const rowData = Array.from(cells).map(cell => `"${cell.textContent}"`).join(",");
+                csvContent += rowData + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "komissiozo_lista.csv";
+            link.click();
         }
 
         window.onload = loadData;
