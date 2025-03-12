@@ -98,7 +98,6 @@
             text-align: left;
             border-bottom: 1px solid #000;
             font-size: 14px;
-            white-space: nowrap;
         }
 
         th {
@@ -171,23 +170,37 @@
         }
 
         function saveData() {
-            const rows = [...document.querySelectorAll("#table-body tr")];
-            localStorage.setItem("komissioData", JSON.stringify(rows.map(row => row.innerHTML)));
+            const rows = [];
+            document.querySelectorAll("#table-body tr").forEach(row => {
+                rows.push({
+                    datum: row.cells[0].textContent,
+                    nev: row.cells[1].textContent,
+                    visszaigazolas: row.cells[2].textContent
+                });
+            });
+            localStorage.setItem("komissioData", JSON.stringify(rows));
         }
 
         function loadData() {
             const savedData = localStorage.getItem("komissioData");
-            if (savedData) document.getElementById("table-body").innerHTML = JSON.parse(savedData).join("");
+            if (savedData) {
+                const tableBody = document.getElementById("table-body");
+                tableBody.innerHTML = "";
+                JSON.parse(savedData).forEach(item => {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = item.datum;
+                    row.insertCell(1).textContent = item.nev;
+                    row.insertCell(2).textContent = item.visszaigazolas;
+                });
+            }
         }
 
         function exportToCSV() {
             let csvContent = "\uFEFFDátum;Komissiózó;Visszaig.szám\n";
-            const rows = document.querySelectorAll("table tbody tr");
+            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
 
-            rows.forEach(row => {
-                const cells = row.querySelectorAll("td");
-                const rowData = Array.from(cells).map(cell => cell.textContent).join(";");
-                csvContent += rowData + "\n";
+            rows.forEach(item => {
+                csvContent += `${item.datum};${item.nev};${item.visszaigazolas}\n`;
             });
 
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
