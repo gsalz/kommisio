@@ -42,16 +42,6 @@
             cursor: pointer;
         }
 
-        .export-btn img {
-            width: 16px;
-            height: 16px;
-            margin-left: 5px;
-        }
-
-        .export-btn:hover {
-            background: #f4f4f4;
-        }
-
         .form-group {
             display: flex;
             flex-direction: row;
@@ -80,10 +70,6 @@
             border: 1px solid #000;
             background: #fff;
             cursor: pointer;
-        }
-
-        .add-btn:hover {
-            background: #f4f4f4;
         }
 
         table {
@@ -158,7 +144,11 @@
         function addItem() {
             const nev = document.getElementById("nev").value;
             const visszaigazolas = document.getElementById("visszaigazolas").value;
-            const today = new Date().toISOString().split('T')[0];
+
+            const now = new Date();
+            const formattedDate = now.toISOString().split('T')[0] + " " +
+                now.getHours().toString().padStart(2, '0') + ":" +
+                now.getMinutes().toString().padStart(2, '0');
 
             if (!nev || !visszaigazolas) {
                 alert("Kérlek, töltsd ki mindkét mezőt!");
@@ -171,48 +161,35 @@
                 return;
             }
 
-            const tableBody = document.getElementById("table-body");
-            const row = tableBody.insertRow();
-            row.insertCell(0).textContent = today;
-            row.insertCell(1).textContent = nev;
-            row.insertCell(2).textContent = visszaigazolas;
+            rows.push({ datum: formattedDate, nev, visszaigazolas });
+            localStorage.setItem("komissioData", JSON.stringify(rows));
 
-            const deleteCell = row.insertCell(3);
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = "❌";
-            deleteButton.onclick = function () {
-                if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
-                    row.remove();
-                    saveData();
-                }
-            };
-            deleteCell.appendChild(deleteButton);
-
-            saveData();
+            renderTable();
             document.getElementById("visszaigazolas").value = "";
         }
 
-        function saveData() {
-            const rows = [];
-            document.querySelectorAll("#table-body tr").forEach(row => {
-                rows.push({
-                    datum: row.cells[0].textContent,
-                    nev: row.cells[1].textContent,
-                    visszaigazolas: row.cells[2].textContent
-                });
-            });
-            localStorage.setItem("komissioData", JSON.stringify(rows));
-        }
+        function renderTable() {
+            const tableBody = document.getElementById("table-body");
+            tableBody.innerHTML = "";
+            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            rows.forEach((item, index) => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = item.datum;
+                row.insertCell(1).textContent = item.nev;
+                row.insertCell(2).textContent = item.visszaigazolas;
 
-        function loadData() {
-            const savedData = localStorage.getItem("komissioData");
-            if (savedData) {
-                const tableBody = document.getElementById("table-body");
-                tableBody.innerHTML = "";
-                JSON.parse(savedData).forEach(item => {
-                    addItem(item.datum, item.nev, item.visszaigazolas);
-                });
-            }
+                const deleteCell = row.insertCell(3);
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "❌";
+                deleteButton.onclick = function () {
+                    if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
+                        rows.splice(index, 1);
+                        localStorage.setItem("komissioData", JSON.stringify(rows));
+                        renderTable();
+                    }
+                };
+                deleteCell.appendChild(deleteButton);
+            });
         }
 
         function searchTable() {
@@ -222,7 +199,20 @@
             });
         }
 
-        window.onload = loadData;
+        function exportToCSV() {
+            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            let csvContent = "Dátum,Komissiózó,Visszaig.szám\n";
+            rows.forEach(item => csvContent += `${item.datum},${item.nev},${item.visszaigazolas}\n`);
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "komissio_lista.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        window.onload = renderTable;
     </script>
 
 </body>
