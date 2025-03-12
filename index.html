@@ -118,6 +118,11 @@
         </div>
 
         <div class="form-group">
+            <label for="search">🔍 Keresés</label>
+            <input type="text" id="search" placeholder="Írj be egy nevet vagy számot..." oninput="searchTable()">
+        </div>
+
+        <div class="form-group">
             <label for="visszaigazolas">Visszaig.szám</label>
             <input type="number" id="visszaigazolas" placeholder="Írd be a számot..." min="0" step="1">
         </div>
@@ -142,6 +147,7 @@
                     <th>Dátum</th>
                     <th>Komissiózó</th>
                     <th>Visszaig.szám</th>
+                    <th>Törlés</th>
                 </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -159,7 +165,6 @@
                 return;
             }
 
-            // Ellenőrzés, hogy a visszaigazolási szám már szerepel-e
             const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
             if (rows.some(row => row.visszaigazolas === visszaigazolas)) {
                 alert("Hiba: Ez a visszaigazoló szám már létezik!");
@@ -171,6 +176,15 @@
             row.insertCell(0).textContent = today;
             row.insertCell(1).textContent = nev;
             row.insertCell(2).textContent = visszaigazolas;
+
+            const deleteCell = row.insertCell(3);
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "❌";
+            deleteButton.onclick = function () {
+                row.remove();
+                saveData();
+            };
+            deleteCell.appendChild(deleteButton);
 
             saveData();
             document.getElementById("visszaigazolas").value = "";
@@ -194,12 +208,16 @@
                 const tableBody = document.getElementById("table-body");
                 tableBody.innerHTML = "";
                 JSON.parse(savedData).forEach(item => {
-                    const row = tableBody.insertRow();
-                    row.insertCell(0).textContent = item.datum;
-                    row.insertCell(1).textContent = item.nev;
-                    row.insertCell(2).textContent = item.visszaigazolas;
+                    addItemToTable(item.datum, item.nev, item.visszaigazolas);
                 });
             }
+        }
+
+        function searchTable() {
+            const searchText = document.getElementById("search").value.toLowerCase();
+            document.querySelectorAll("#table-body tr").forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(searchText) ? "" : "none";
+            });
         }
 
         window.onload = loadData;
