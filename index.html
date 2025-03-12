@@ -185,7 +185,9 @@
             const nev = document.getElementById("nev").value;
             const visszaigazolas = document.getElementById("visszaigazolas").value;
             const keszlet = document.getElementById("keszlet").value;
-            const today = new Date().toISOString().split('T')[0];
+
+            const now = new Date();
+            const formattedDate = now.toISOString().split('T')[0] + " " + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
 
             if (!nev) {
                 alert("Kérlek, válassz komissiózót!");
@@ -194,7 +196,7 @@
 
             const tableBody = document.getElementById("table-body");
             const row = tableBody.insertRow();
-            row.insertCell(0).textContent = today;
+            row.insertCell(0).textContent = formattedDate;
             row.insertCell(1).textContent = nev;
             row.insertCell(2).textContent = visszaigazolas || "-";
             row.insertCell(3).textContent = keszlet || "-";
@@ -208,13 +210,6 @@
                 }
             };
             deleteCell.appendChild(deleteButton);
-        }
-
-        function searchTable() {
-            const searchText = document.getElementById("search").value.toLowerCase();
-            document.querySelectorAll("#table-body tr").forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(searchText) ? "" : "none";
-            });
         }
     </script>
 
