@@ -140,18 +140,6 @@
             </select>
         </div>
 
-        <div class="form-group">
-            <label for="nev">Komissiózó</label>
-            <select id="nev">
-                <option value="">Válassz...</option>
-                <option value="Molnár Attila">Molnár Attila</option>
-                <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-                <option value="Lackó István">Lackó István</option>
-                <option value="Czifra Imre">Czifra Imre</option>
-                <option value="Takács József">Takács József</option>
-            </select>
-        </div>
-
         <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
 
         <table>
@@ -199,14 +187,29 @@
             deleteCell.appendChild(deleteButton);
 
             saveData();
-            document.getElementById("visszaigazolas").value = "";
         }
 
-        function searchTable() {
-            const searchText = document.getElementById("search").value.toLowerCase();
+        function saveData() {
+            const rows = [];
             document.querySelectorAll("#table-body tr").forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(searchText) ? "" : "none";
+                rows.push({
+                    datum: row.cells[0].textContent,
+                    nev: row.cells[1].textContent,
+                    visszaigazolas: row.cells[2].textContent,
+                    keszlet: row.cells[3].textContent
+                });
             });
+            localStorage.setItem("komissioData", JSON.stringify(rows));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem("komissioData");
+            if (savedData) {
+                document.getElementById("table-body").innerHTML = "";
+                JSON.parse(savedData).forEach(item => {
+                    addItem(item.datum, item.nev, item.visszaigazolas, item.keszlet);
+                });
+            }
         }
 
         window.onload = loadData;
