@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Komissiózó Nyilvántartás</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            border: 1px solid #000;
+            padding: 20px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            max-height: 50px;
+        }
+
+        .export-btn {
+            display: flex;
+            align-items: center;
+            background: none;
+            border: 1px solid #000;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .export-btn img {
+            width: 16px;
+            height: 16px;
+            margin-left: 5px;
+        }
+
+        .export-btn:hover {
+            background: #f4f4f4;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            width: 150px;
+        }
+
+        .form-group select, .form-group input {
+            width: calc(100% - 160px);
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #000;
+            background: #fff;
+        }
+
+        .add-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #000;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .add-btn:hover {
+            background: #f4f4f4;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            border: 1px solid #000;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #000;
+            font-size: 14px;
+        }
+
+        th {
+            font-weight: bold;
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <img src="remenyi.png" alt="Reményi Csomagolástechnika">
+            <button class="export-btn" onclick="exportToCSV()">
+                Importálás
+                <img src="excel.png" alt="Excel ikon">
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label for="visszaigazolas">Visszaig.szám</label>
+            <input type="text" id="visszaigazolas" placeholder="Írd be a számot...">
+        </div>
+
+        <div class="form-group">
+            <label for="nev">Komissiózó</label>
+            <select id="nev">
+                <option value="">Válassz...</option>
+                <option value="Molnár Attila">Molnár Attila</option>
+                <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+                <option value="Lackó István">Lackó István</option>
+                <option value="Czifra Imre">Czifra Imre</option>
+                <option value="Takács József">Takács József</option>
+            </select>
+        </div>
+
+        <button class="add-btn" onclick="addItem()">Hozzáadás</button>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Dátum</th>
+                    <th>Komissiózó</th>
+                    <th>Visszaig.szám</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        function addItem() {
+            const nev = document.getElementById("nev").value;
+            const visszaigazolas = document.getElementById("visszaigazolas").value;
+            const today = new Date().toISOString().split('T')[0];
+
+            if (!nev || !visszaigazolas) {
+                alert("Kérlek, töltsd ki mindkét mezőt!");
+                return;
+            }
+
+            const tableBody = document.getElementById("table-body");
+            const row = tableBody.insertRow();
+            row.insertCell(0).textContent = today;
+            row.insertCell(1).textContent = nev;
+            row.insertCell(2).textContent = visszaigazolas;
+
+            saveData();
+            document.getElementById("visszaigazolas").value = "";
+        }
+
+        function saveData() {
+            const rows = [...document.querySelectorAll("#table-body tr")];
+            localStorage.setItem("komissioData", JSON.stringify(rows.map(row => row.innerHTML)));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem("komissioData");
+            if (savedData) document.getElementById("table-body").innerHTML = JSON.parse(savedData).join("");
+        }
+
+        window.onload = loadData;
+    </script>
+
+</body>
+</html>
