@@ -210,7 +210,7 @@
                 const tableBody = document.getElementById("table-body");
                 tableBody.innerHTML = "";
                 JSON.parse(savedData).forEach(item => {
-                    addItemToTable(item.datum, item.nev, item.visszaigazolas);
+                    addItem(item.datum, item.nev, item.visszaigazolas);
                 });
             }
         }
