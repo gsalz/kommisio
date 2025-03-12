@@ -181,8 +181,10 @@
             const deleteButton = document.createElement("button");
             deleteButton.textContent = "❌";
             deleteButton.onclick = function () {
-                row.remove();
-                saveData();
+                if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
+                    row.remove();
+                    saveData();
+                }
             };
             deleteCell.appendChild(deleteButton);
 
