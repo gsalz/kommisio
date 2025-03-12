@@ -133,6 +133,11 @@
             </select>
         </div>
 
+        <div class="form-group">
+            <label for="visszaigazolas">Visszaig.szám</label>
+            <input type="number" id="visszaigazolas" placeholder="Pl.: 123456" min="0" step="1">
+        </div>
+
         <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
 
         <table>
@@ -152,16 +157,18 @@
     <script>
         function addItem() {
             const nev = document.getElementById("nev").value;
+            const visszaigazolas = document.getElementById("visszaigazolas").value;
             const keszlet = document.getElementById("keszlet").value;
-            const now = new Date();
-            const formattedDate = now.toISOString().split('T')[0] + " " + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
 
             if (!nev) {
                 alert("Kérlek, válassz komissiózót!");
                 return;
             }
 
-            const item = { datum: formattedDate, nev, keszlet };
+            const now = new Date();
+            const formattedDate = now.toISOString().split('T')[0] + " " + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+            const item = { datum: formattedDate, nev, visszaigazolas, keszlet };
             const items = JSON.parse(localStorage.getItem("komissioData") || "[]");
             items.push(item);
             localStorage.setItem("komissioData", JSON.stringify(items));
@@ -173,16 +180,14 @@
             const tableBody = document.getElementById("table-body");
             tableBody.innerHTML = "";
             const items = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            
             items.forEach((item, index) => {
-                if (!item.nev) return; // Nem adunk hozzá üres bejegyzéseket
-                
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = item.datum;
                 row.insertCell(1).textContent = item.nev;
-                row.insertCell(2).textContent = item.keszlet || "-";
-                
-                const deleteCell = row.insertCell(3);
+                row.insertCell(2).textContent = item.visszaigazolas || "-";
+                row.insertCell(3).textContent = item.keszlet || "-";
+
+                const deleteCell = row.insertCell(4);
                 const deleteButton = document.createElement("button");
                 deleteButton.textContent = "🗑 Törlés";
                 deleteButton.onclick = function () {
