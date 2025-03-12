@@ -159,6 +159,13 @@
                 return;
             }
 
+            // Ellenőrzés, hogy a visszaigazolási szám már szerepel-e
+            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            if (rows.some(row => row.visszaigazolas === visszaigazolas)) {
+                alert("Hiba: Ez a visszaigazoló szám már létezik!");
+                return;
+            }
+
             const tableBody = document.getElementById("table-body");
             const row = tableBody.insertRow();
             row.insertCell(0).textContent = today;
@@ -193,21 +200,6 @@
                     row.insertCell(2).textContent = item.visszaigazolas;
                 });
             }
-        }
-
-        function exportToCSV() {
-            let csvContent = "\uFEFFDátum;Komissiózó;Visszaig.szám\n";
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-
-            rows.forEach(item => {
-                csvContent += `${item.datum};${item.nev};${item.visszaigazolas}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "komissiozo_lista.csv";
-            link.click();
         }
 
         window.onload = loadData;
