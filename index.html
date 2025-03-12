@@ -32,10 +32,6 @@
             margin-bottom: 20px;
         }
 
-        .header img {
-            max-height: 50px;
-        }
-
         .export-btn {
             display: flex;
             align-items: center;
@@ -102,7 +98,7 @@
             text-align: left;
             border-bottom: 1px solid #000;
             font-size: 14px;
-            white-space: nowrap; /* Megakadályozza a sorok tördelését */
+            white-space: nowrap;
         }
 
         th {
@@ -185,12 +181,12 @@
         }
 
         function exportToCSV() {
-            let csvContent = "Dátum,Komissiózó,Visszaig.szám\n";
+            let csvContent = "\uFEFFDátum;Komissiózó;Visszaig.szám\n";
             const rows = document.querySelectorAll("table tbody tr");
 
             rows.forEach(row => {
                 const cells = row.querySelectorAll("td");
-                const rowData = Array.from(cells).map(cell => `"${cell.textContent}"`).join(",");
+                const rowData = Array.from(cells).map(cell => cell.textContent).join(";");
                 csvContent += rowData + "\n";
             });
 
