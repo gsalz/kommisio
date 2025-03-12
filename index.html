@@ -124,7 +124,7 @@
 
         <div class="form-group">
             <label for="keszlet">Készletátárolás</label>
-            <select id="keszlet" onchange="toggleVisszaigazolas()">
+            <select id="keszlet">
                 <option value="">Nem készletátárolás</option>
                 <option value="Győr">Győr</option>
                 <option value="Szeged">Szeged</option>
@@ -177,41 +177,28 @@
             const now = new Date();
             const formattedDate = now.toISOString().split('T')[0] + " " + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
 
-            if (!nev) {
-                alert("Kérlek, válassz komissiózót!");
-                return;
-            }
+            const item = { datum: formattedDate, nev, visszaigazolas, keszlet };
+            const items = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            items.push(item);
+            localStorage.setItem("komissioData", JSON.stringify(items));
 
+            renderTable();
+        }
+
+        function renderTable() {
             const tableBody = document.getElementById("table-body");
-            const row = tableBody.insertRow();
-            row.insertCell(0).textContent = formattedDate;
-            row.insertCell(1).textContent = nev;
-            row.insertCell(2).textContent = visszaigazolas || "-";
-            row.insertCell(3).textContent = keszlet || "-";
-
-            const deleteCell = row.insertCell(4);
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = "🗑 Törlés";
-            deleteButton.onclick = function () {
-                if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
-                    row.remove();
-                    saveData();
-                }
-            };
-            deleteCell.appendChild(deleteButton);
-
-            saveData();
+            tableBody.innerHTML = "";
+            const items = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            items.forEach(item => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = item.datum;
+                row.insertCell(1).textContent = item.nev;
+                row.insertCell(2).textContent = item.visszaigazolas || "-";
+                row.insertCell(3).textContent = item.keszlet || "-";
+            });
         }
 
-        function saveData() {
-            localStorage.setItem("komissioData", document.getElementById("table-body").innerHTML);
-        }
-
-        function loadData() {
-            document.getElementById("table-body").innerHTML = localStorage.getItem("komissioData") || "";
-        }
-
-        window.onload = loadData;
+        window.onload = renderTable;
     </script>
 
 </body>
