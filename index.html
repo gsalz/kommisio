@@ -207,7 +207,8 @@
         function loadData() {
             const savedData = localStorage.getItem("komissioData");
             if (savedData) {
-                document.getElementById("table-body").innerHTML = "";
+                const tableBody = document.getElementById("table-body");
+                tableBody.innerHTML = "";
                 JSON.parse(savedData).forEach(item => {
                     addItem(item.datum, item.nev, item.visszaigazolas);
                 });
