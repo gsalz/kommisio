@@ -169,18 +169,6 @@
     </div>
 
     <script>
-        function toggleVisszaigazolas() {
-            const keszlet = document.getElementById("keszlet").value;
-            const visszaigazolasInput = document.getElementById("visszaigazolas");
-
-            if (keszlet) {
-                visszaigazolasInput.disabled = true;
-                visszaigazolasInput.value = "";
-            } else {
-                visszaigazolasInput.disabled = false;
-            }
-        }
-
         function addItem() {
             const nev = document.getElementById("nev").value;
             const visszaigazolas = document.getElementById("visszaigazolas").value;
@@ -207,10 +195,23 @@
             deleteButton.onclick = function () {
                 if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
                     row.remove();
+                    saveData();
                 }
             };
             deleteCell.appendChild(deleteButton);
+
+            saveData();
         }
+
+        function saveData() {
+            localStorage.setItem("komissioData", document.getElementById("table-body").innerHTML);
+        }
+
+        function loadData() {
+            document.getElementById("table-body").innerHTML = localStorage.getItem("komissioData") || "";
+        }
+
+        window.onload = loadData;
     </script>
 
 </body>
