@@ -124,7 +124,20 @@
 
         <div class="form-group">
             <label for="visszaigazolas">Visszaig.szám</label>
-            <input type="number" id="visszaigazolas" placeholder="Írd be a számot..." min="0" step="1">
+            <input type="number" id="visszaigazolas" placeholder="Pl.: 123456" min="0" step="1">
+        </div>
+
+        <div class="form-group">
+            <label for="keszlet">Készletátárolás</label>
+            <select id="keszlet">
+                <option value="">Válassz...</option>
+                <option value="Győr">Győr</option>
+                <option value="Szeged">Szeged</option>
+                <option value="Miskolc">Miskolc</option>
+                <option value="Sződ">Sződ</option>
+                <option value="Mátyás tér">Mátyás tér</option>
+                <option value="GLS">GLS</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -139,7 +152,7 @@
             </select>
         </div>
 
-        <button class="add-btn" onclick="addItem()">Hozzáadás</button>
+        <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
 
         <table>
             <thead>
@@ -147,6 +160,7 @@
                     <th>Dátum</th>
                     <th>Komissiózó</th>
                     <th>Visszaig.szám</th>
+                    <th>Készletátárolás</th>
                     <th>Törlés</th>
                 </tr>
             </thead>
@@ -158,16 +172,11 @@
         function addItem() {
             const nev = document.getElementById("nev").value;
             const visszaigazolas = document.getElementById("visszaigazolas").value;
+            const keszlet = document.getElementById("keszlet").value;
             const today = new Date().toISOString().split('T')[0];
 
-            if (!nev || !visszaigazolas) {
-                alert("Kérlek, töltsd ki mindkét mezőt!");
-                return;
-            }
-
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            if (rows.some(row => row.visszaigazolas === visszaigazolas)) {
-                alert("Hiba: Ez a visszaigazoló szám már létezik!");
+            if (!nev || !visszaigazolas || !keszlet) {
+                alert("Kérlek, tölts ki minden mezőt!");
                 return;
             }
 
@@ -176,10 +185,11 @@
             row.insertCell(0).textContent = today;
             row.insertCell(1).textContent = nev;
             row.insertCell(2).textContent = visszaigazolas;
+            row.insertCell(3).textContent = keszlet;
 
-            const deleteCell = row.insertCell(3);
+            const deleteCell = row.insertCell(4);
             const deleteButton = document.createElement("button");
-            deleteButton.textContent = "❌";
+            deleteButton.textContent = "🗑 Törlés";
             deleteButton.onclick = function () {
                 if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
                     row.remove();
@@ -190,28 +200,6 @@
 
             saveData();
             document.getElementById("visszaigazolas").value = "";
-        }
-
-        function saveData() {
-            const rows = [];
-            document.querySelectorAll("#table-body tr").forEach(row => {
-                rows.push({
-                    datum: row.cells[0].textContent,
-                    nev: row.cells[1].textContent,
-                    visszaigazolas: row.cells[2].textContent
-                });
-            });
-            localStorage.setItem("komissioData", JSON.stringify(rows));
-        }
-
-        function loadData() {
-            const savedData = localStorage.getItem("komissioData");
-            if (savedData) {
-                document.getElementById("table-body").innerHTML = "";
-                JSON.parse(savedData).forEach(item => {
-                    addItem(item.datum, item.nev, item.visszaigazolas);
-                });
-            }
         }
 
         function searchTable() {
