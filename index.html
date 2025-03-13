@@ -159,6 +159,15 @@
             let rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
             visszaigazolasok = visszaigazolasok.split(",").map(num => num.trim());
 
+            // Ellenőrzés, hogy van-e már duplikált visszaigazoló szám
+            const existingNumbers = rows.map(row => row.visszaigazolas);
+            const duplicateNumbers = visszaigazolasok.filter(num => existingNumbers.includes(num));
+
+            if (duplicateNumbers.length > 0) {
+                alert(`Hiba: Ezek a visszaigazoló számok már léteznek: ${duplicateNumbers.join(", ")}`);
+                return;
+            }
+
             visszaigazolasok.forEach(visszaigazolas => {
                 rows.push({ datum: formattedDate, nev, visszaigazolas, bevitt: false, bevittDatum: "" });
             });
