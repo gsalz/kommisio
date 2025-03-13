@@ -189,27 +189,4 @@
             link.download = "komissiozo_lista.csv";
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
-        }
-
-        function renderTable() {
-            const tableBody = document.getElementById("table-body");
-            tableBody.innerHTML = "";
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-
-            rows.forEach((item, index) => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = item.datum;
-                row.insertCell(1).textContent = item.nev;
-                row.insertCell(2).textContent = item.visszaigazolas;
-                
-                const deleteCell = row.insertCell(5);
-                deleteCell.innerHTML = `<button onclick="deleteRow(${index})">❌</button>`;
-            });
-        }
-
-        window.onload = renderTable;
-    </script>
-
-</body>
-</html>
+    
