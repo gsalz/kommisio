@@ -43,9 +43,13 @@
         }
 
         .export-btn img {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             margin-left: 5px;
+        }
+
+        .export-btn:hover {
+            background: #f4f4f4;
         }
 
         .form-group {
@@ -76,6 +80,10 @@
             border: 1px solid #000;
             background: #fff;
             cursor: pointer;
+        }
+
+        .add-btn:hover {
+            background: #f4f4f4;
         }
 
         table {
@@ -110,11 +118,6 @@
         </div>
 
         <div class="form-group">
-            <label for="search">🔍 Keresés</label>
-            <input type="text" id="search" placeholder="Írj be egy nevet vagy számot..." oninput="searchTable()">
-        </div>
-
-        <div class="form-group">
             <label for="visszaigazolas">Visszaig.szám</label>
             <input type="number" id="visszaigazolas" placeholder="Írd be a számot..." min="0" step="1">
         </div>
@@ -139,7 +142,6 @@
                     <th>Dátum</th>
                     <th>Komissiózó</th>
                     <th>Visszaig.szám</th>
-                    <th>Törlés</th>
                 </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -150,69 +152,65 @@
         function addItem() {
             const nev = document.getElementById("nev").value;
             const visszaigazolas = document.getElementById("visszaigazolas").value;
-
-            const now = new Date();
-            const formattedDate = now.toISOString().split('T')[0] + " " +
-                now.getHours().toString().padStart(2, '0') + ":" +
-                now.getMinutes().toString().padStart(2, '0');
+            const today = new Date().toISOString().split('T')[0];
 
             if (!nev || !visszaigazolas) {
                 alert("Kérlek, töltsd ki mindkét mezőt!");
                 return;
             }
 
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            if (rows.some(row => row.visszaigazolas === visszaigazolas)) {
-                alert("Hiba: Ez a visszaigazoló szám már létezik!");
-                return;
-            }
+            const tableBody = document.getElementById("table-body");
+            const row = tableBody.insertRow();
+            row.insertCell(0).textContent = today;
+            row.insertCell(1).textContent = nev;
+            row.insertCell(2).textContent = visszaigazolas;
 
-            rows.push({ datum: formattedDate, nev, visszaigazolas });
-            localStorage.setItem("komissioData", JSON.stringify(rows));
-
-            renderTable();
+            saveData();
             document.getElementById("visszaigazolas").value = "";
-            document.getElementById("nev").value = "";
         }
 
-        function renderTable() {
-            const tableBody = document.getElementById("table-body");
-            tableBody.innerHTML = "";
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            rows.forEach((item, index) => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = item.datum;
-                row.insertCell(1).textContent = item.nev;
-                row.insertCell(2).textContent = item.visszaigazolas;
-
-                const deleteCell = row.insertCell(3);
-                const deleteButton = document.createElement("button");
-                deleteButton.textContent = "❌";
-                deleteButton.onclick = function () {
-                    if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
-                        rows.splice(index, 1);
-                        localStorage.setItem("komissioData", JSON.stringify(rows));
-                        renderTable();
-                    }
-                };
-                deleteCell.appendChild(deleteButton);
+        function saveData() {
+            const rows = [];
+            document.querySelectorAll("#table-body tr").forEach(row => {
+                rows.push({
+                    datum: row.cells[0].textContent,
+                    nev: row.cells[1].textContent,
+                    visszaigazolas: row.cells[2].textContent
+                });
             });
+            localStorage.setItem("komissioData", JSON.stringify(rows));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem("komissioData");
+            if (savedData) {
+                const tableBody = document.getElementById("table-body");
+                tableBody.innerHTML = "";
+                JSON.parse(savedData).forEach(item => {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = item.datum;
+                    row.insertCell(1).textContent = item.nev;
+                    row.insertCell(2).textContent = item.visszaigazolas;
+                });
+            }
         }
 
         function exportToCSV() {
+            let csvContent = "\uFEFFDátum;Komissiózó;Visszaig.szám\n";
             const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            let csvContent = "Dátum,Komissiózó,Visszaig.szám\n";
-            rows.forEach(item => csvContent += `${item.datum},${item.nev},${item.visszaigazolas}\n`);
+
+            rows.forEach(item => {
+                csvContent += `${item.datum};${item.nev};${item.visszaigazolas}\n`;
+            });
 
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", "komissio_lista.csv");
-            document.body.appendChild(link);
+            link.download = "komissiozo_lista.csv";
             link.click();
         }
 
-        window.onload = renderTable;
+        window.onload = loadData;
     </script>
 
 </body>
