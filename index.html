@@ -134,6 +134,7 @@
                     <th>Dátum</th>
                     <th>Komissiózó</th>
                     <th>Visszaig.szám</th>
+                    <th>Törlés</th>
                 </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -168,11 +169,24 @@
             const tableBody = document.getElementById("table-body");
             tableBody.innerHTML = "";
             const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            rows.forEach(item => {
+            rows.forEach((item, index) => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = item.datum;
                 row.insertCell(1).textContent = item.nev;
                 row.insertCell(2).textContent = item.visszaigazolas;
+
+                // 🔥 Törlés gomb hozzáadása
+                const deleteCell = row.insertCell(3);
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "❌";
+                deleteButton.onclick = function () {
+                    if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
+                        rows.splice(index, 1);
+                        localStorage.setItem("komissioData", JSON.stringify(rows));
+                        renderTable();
+                    }
+                };
+                deleteCell.appendChild(deleteButton);
             });
         }
 
