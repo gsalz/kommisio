@@ -17,7 +17,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             border: 1px solid #000;
             padding: 20px;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
@@ -135,6 +135,7 @@
                     <th>Komissiózó</th>
                     <th>Visszaig.szám</th>
                     <th>Bevitt ✅</th>
+                    <th>Bevitt Dátum</th>
                     <th>Törlés</th>
                 </tr>
             </thead>
@@ -148,9 +149,7 @@
             let visszaigazolasok = document.getElementById("visszaigazolas").value;
 
             const now = new Date();
-            const formattedDate = now.toISOString().split('T')[0] + " " +
-                now.getHours().toString().padStart(2, '0') + ":" +
-                now.getMinutes().toString().padStart(2, '0');
+            const formattedDate = now.toLocaleString('hu-HU');
 
             if (!nev || !visszaigazolasok) {
                 alert("Kérlek, töltsd ki mindkét mezőt!");
@@ -160,16 +159,8 @@
             let rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
             visszaigazolasok = visszaigazolasok.split(",").map(num => num.trim());
 
-            const existingNumbers = rows.map(row => row.visszaigazolas);
-            const duplicateNumbers = visszaigazolasok.filter(num => existingNumbers.includes(num));
-
-            if (duplicateNumbers.length > 0) {
-                alert(`Hiba: Ezek a visszaigazoló számok már léteznek: ${duplicateNumbers.join(", ")}`);
-                return;
-            }
-
             visszaigazolasok.forEach(visszaigazolas => {
-                rows.push({ datum: formattedDate, nev, visszaigazolas, bevitt: false });
+                rows.push({ datum: formattedDate, nev, visszaigazolas, bevitt: false, bevittDatum: "" });
             });
 
             localStorage.setItem("komissioData", JSON.stringify(rows));
@@ -183,6 +174,7 @@
             const tableBody = document.getElementById("table-body");
             tableBody.innerHTML = "";
             const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+
             rows.forEach((item, index) => {
                 const row = tableBody.insertRow();
                 row.insertCell(0).textContent = item.datum;
@@ -194,12 +186,18 @@
                 checkBox.type = "checkbox";
                 checkBox.checked = item.bevitt;
                 checkBox.onclick = function () {
+                    const now = new Date();
                     rows[index].bevitt = checkBox.checked;
+                    rows[index].bevittDatum = checkBox.checked ? now.toLocaleString('hu-HU') : "";
                     localStorage.setItem("komissioData", JSON.stringify(rows));
+                    renderTable();
                 };
                 checkCell.appendChild(checkBox);
 
-                const deleteCell = row.insertCell(4);
+                const bevittDatumCell = row.insertCell(4);
+                bevittDatumCell.textContent = item.bevittDatum;
+
+                const deleteCell = row.insertCell(5);
                 const deleteButton = document.createElement("button");
                 deleteButton.textContent = "❌";
                 deleteButton.onclick = function () {
@@ -211,21 +209,6 @@
                 };
                 deleteCell.appendChild(deleteButton);
             });
-        }
-
-        function exportToCSV() {
-            let csvContent = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt\n";
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-
-            rows.forEach(item => {
-                csvContent += `${item.datum};${item.nev};${item.visszaigazolas};${item.bevitt ? "Igen" : "Nem"}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "komissiozo_lista.csv";
-            link.click();
         }
 
         window.onload = renderTable;
