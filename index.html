@@ -213,6 +213,21 @@
             });
         }
 
+        function exportToCSV() {
+            let csvContent = "Dátum,Komissiózó,Visszaig.szám,Bevitt\n";
+            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+
+            rows.forEach(item => {
+                csvContent += `${item.datum},${item.nev},${item.visszaigazolas},${item.bevitt ? "Igen" : "Nem"}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "komissiozo_lista.csv";
+            link.click();
+        }
+
         window.onload = renderTable;
     </script>
 
