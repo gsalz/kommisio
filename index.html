@@ -48,10 +48,6 @@
             margin-left: 5px;
         }
 
-        .export-btn:hover {
-            background: #f4f4f4;
-        }
-
         .form-group {
             display: flex;
             flex-direction: row;
@@ -80,10 +76,6 @@
             border: 1px solid #000;
             background: #fff;
             cursor: pointer;
-        }
-
-        .add-btn:hover {
-            background: #f4f4f4;
         }
 
         table {
@@ -152,55 +144,43 @@
         function addItem() {
             const nev = document.getElementById("nev").value;
             const visszaigazolas = document.getElementById("visszaigazolas").value;
-            const today = new Date().toISOString().split('T')[0];
+
+            const now = new Date();
+            const formattedDate = now.toISOString().split('T')[0] + " " +
+                now.getHours().toString().padStart(2, '0') + ":" +
+                now.getMinutes().toString().padStart(2, '0');
 
             if (!nev || !visszaigazolas) {
                 alert("Kérlek, töltsd ki mindkét mezőt!");
                 return;
             }
 
-            const tableBody = document.getElementById("table-body");
-            const row = tableBody.insertRow();
-            row.insertCell(0).textContent = today;
-            row.insertCell(1).textContent = nev;
-            row.insertCell(2).textContent = visszaigazolas;
-
-            saveData();
-            document.getElementById("visszaigazolas").value = "";
-        }
-
-        function saveData() {
-            const rows = [];
-            document.querySelectorAll("#table-body tr").forEach(row => {
-                rows.push({
-                    datum: row.cells[0].textContent,
-                    nev: row.cells[1].textContent,
-                    visszaigazolas: row.cells[2].textContent
-                });
-            });
+            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            rows.push({ datum: formattedDate, nev, visszaigazolas });
             localStorage.setItem("komissioData", JSON.stringify(rows));
+
+            renderTable();
+            document.getElementById("visszaigazolas").value = "";
+            document.getElementById("nev").value = "";
         }
 
-        function loadData() {
-            const savedData = localStorage.getItem("komissioData");
-            if (savedData) {
-                const tableBody = document.getElementById("table-body");
-                tableBody.innerHTML = "";
-                JSON.parse(savedData).forEach(item => {
-                    const row = tableBody.insertRow();
-                    row.insertCell(0).textContent = item.datum;
-                    row.insertCell(1).textContent = item.nev;
-                    row.insertCell(2).textContent = item.visszaigazolas;
-                });
-            }
+        function renderTable() {
+            const tableBody = document.getElementById("table-body");
+            tableBody.innerHTML = "";
+            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            rows.forEach(item => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = item.datum;
+                row.insertCell(1).textContent = item.nev;
+                row.insertCell(2).textContent = item.visszaigazolas;
+            });
         }
 
         function exportToCSV() {
-            let csvContent = "\uFEFFDátum;Komissiózó;Visszaig.szám\n";
+            let csvContent = "Dátum,Komissiózó,Visszaig.szám\n";
             const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-
             rows.forEach(item => {
-                csvContent += `${item.datum};${item.nev};${item.visszaigazolas}\n`;
+                csvContent += `${item.datum},${item.nev},${item.visszaigazolas}\n`;
             });
 
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -210,7 +190,7 @@
             link.click();
         }
 
-        window.onload = loadData;
+        window.onload = renderTable;
     </script>
 
 </body>
