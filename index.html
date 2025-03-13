@@ -109,6 +109,7 @@
             </button>
         </div>
 
+        <!-- 🔹 A KOMISSIÓZÓ VÁLASZTÓ FELJEBB KERÜLT -->
         <div class="form-group">
             <label for="nev">Komissiózó</label>
             <select id="nev">
@@ -121,6 +122,7 @@
             </select>
         </div>
 
+        <!-- 🔹 A VISSZAIGAZOLÁS MEZŐ LEJJEBB KERÜLT -->
         <div class="form-group">
             <label for="visszaigazolas">Visszaig.szám (többet is beírhatsz vesszővel elválasztva)</label>
             <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678, 91011">
@@ -146,7 +148,10 @@
     <script>
         function addItem() {
             const nev = document.getElementById("nev").value;
-            let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
+            let visszaigazolasok = document.getElementById("visszaigazolas").value;
+
+            const now = new Date();
+            const formattedDate = now.toLocaleString('hu-HU');
 
             if (!nev || !visszaigazolasok) {
                 alert("Kérlek, töltsd ki mindkét mezőt!");
@@ -156,37 +161,68 @@
             let rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
             visszaigazolasok = visszaigazolasok.split(",").map(num => num.trim());
 
+            const existingNumbers = rows.map(row => row.visszaigazolas);
+            const duplicateNumbers = visszaigazolasok.filter(num => existingNumbers.includes(num));
+
+            if (duplicateNumbers.length > 0) {
+                alert(Hiba: Ezek a visszaigazoló számok már léteznek: ${duplicateNumbers.join(", ")});
+                return;
+            }
+
             visszaigazolasok.forEach(visszaigazolas => {
-                rows.push({ datum: new Date().toLocaleString(), nev, visszaigazolas, bevitt: false, bevittDatum: "" });
+                rows.push({ datum: formattedDate, nev, visszaigazolas, bevitt: false, bevittDatum: "" });
             });
 
             localStorage.setItem("komissioData", JSON.stringify(rows));
+
             renderTable();
             document.getElementById("visszaigazolas").value = "";
             document.getElementById("nev").value = "";
         }
 
-        function deleteRow(index) {
-            if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
-                let rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-                rows.splice(index, 1);
-                localStorage.setItem("komissioData", JSON.stringify(rows));
-                renderTable();
-            }
-        }
-
-        function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt;Bevitt Dátum\n";
+        function renderTable() {
+            const tableBody = document.getElementById("table-body");
+            tableBody.innerHTML = "";
             const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
 
-            rows.forEach(item => {
-                csvContent += `${item.datum};${item.nev};${item.visszaigazolas};${item.bevitt ? "Igen" : "Nem"};${item.bevittDatum}\n`;
-            });
+            rows.forEach((item, index) => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = item.datum;
+                row.insertCell(1).textContent = item.nev;
+                row.insertCell(2).textContent = item.visszaigazolas;
 
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.href = encodedUri;
-            link.download = "komissiozo_lista.csv";
-            document.body.appendChild(link);
-            link.click();
-    
+                const checkCell = row.insertCell(3);
+                const checkBox = document.createElement("input");
+                checkBox.type = "checkbox";
+                checkBox.checked = item.bevitt;
+                checkBox.onclick = function () {
+                    const now = new Date();
+                    rows[index].bevitt = checkBox.checked;
+                    rows[index].bevittDatum = checkBox.checked ? now.toLocaleString('hu-HU') : "";
+                    localStorage.setItem("komissioData", JSON.stringify(rows));
+                    renderTable();
+                };
+                checkCell.appendChild(checkBox);
+
+                const bevittDatumCell = row.insertCell(4);
+                bevittDatumCell.textContent = item.bevittDatum;
+
+                const deleteCell = row.insertCell(5);
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "❌";
+                deleteButton.onclick = function () {
+                    if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
+                        rows.splice(index, 1);
+                        localStorage.setItem("komissioData", JSON.stringify(rows));
+                        renderTable();
+                    }
+                };
+                deleteCell.appendChild(deleteButton);
+            });
+        }
+
+        window.onload = renderTable;
+    </script>
+
+</body>
+</html>
