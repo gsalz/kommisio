@@ -110,8 +110,8 @@
         </div>
 
         <div class="form-group">
-            <label for="visszaigazolas">Visszaig.szám</label>
-            <input type="number" id="visszaigazolas" placeholder="Írd be a számot..." min="0" step="1">
+            <label for="visszaigazolas">Visszaig.szám (többet is beírhatsz vesszővel elválasztva)</label>
+            <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678, 91011">
         </div>
 
         <div class="form-group">
@@ -134,6 +134,7 @@
                     <th>Dátum</th>
                     <th>Komissiózó</th>
                     <th>Visszaig.szám</th>
+                    <th>Bevitt ✅</th>
                     <th>Törlés</th>
                 </tr>
             </thead>
@@ -144,27 +145,33 @@
     <script>
         function addItem() {
             const nev = document.getElementById("nev").value;
-            const visszaigazolas = document.getElementById("visszaigazolas").value;
+            let visszaigazolasok = document.getElementById("visszaigazolas").value;
 
             const now = new Date();
             const formattedDate = now.toISOString().split('T')[0] + " " +
                 now.getHours().toString().padStart(2, '0') + ":" +
                 now.getMinutes().toString().padStart(2, '0');
 
-            if (!nev || !visszaigazolas) {
+            if (!nev || !visszaigazolasok) {
                 alert("Kérlek, töltsd ki mindkét mezőt!");
                 return;
             }
 
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            let rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+            visszaigazolasok = visszaigazolasok.split(",").map(num => num.trim());
 
-            // 🔥 DUPLIKÁCIÓ ELLENŐRZÉS: Ha már létezik a visszaigazoló szám, hibaüzenetet dob!
-            if (rows.some(row => row.visszaigazolas === visszaigazolas)) {
-                alert("Hiba: Ez a visszaigazoló szám már létezik!");
+            const existingNumbers = rows.map(row => row.visszaigazolas);
+            const duplicateNumbers = visszaigazolasok.filter(num => existingNumbers.includes(num));
+
+            if (duplicateNumbers.length > 0) {
+                alert(`Hiba: Ezek a visszaigazoló számok már léteznek: ${duplicateNumbers.join(", ")}`);
                 return;
             }
 
-            rows.push({ datum: formattedDate, nev, visszaigazolas });
+            visszaigazolasok.forEach(visszaigazolas => {
+                rows.push({ datum: formattedDate, nev, visszaigazolas, bevitt: false });
+            });
+
             localStorage.setItem("komissioData", JSON.stringify(rows));
 
             renderTable();
@@ -182,8 +189,17 @@
                 row.insertCell(1).textContent = item.nev;
                 row.insertCell(2).textContent = item.visszaigazolas;
 
-                // 🔥 Törlés gomb hozzáadása
-                const deleteCell = row.insertCell(3);
+                const checkCell = row.insertCell(3);
+                const checkBox = document.createElement("input");
+                checkBox.type = "checkbox";
+                checkBox.checked = item.bevitt;
+                checkBox.onclick = function () {
+                    rows[index].bevitt = checkBox.checked;
+                    localStorage.setItem("komissioData", JSON.stringify(rows));
+                };
+                checkCell.appendChild(checkBox);
+
+                const deleteCell = row.insertCell(4);
                 const deleteButton = document.createElement("button");
                 deleteButton.textContent = "❌";
                 deleteButton.onclick = function () {
@@ -195,20 +211,6 @@
                 };
                 deleteCell.appendChild(deleteButton);
             });
-        }
-
-        function exportToCSV() {
-            let csvContent = "Dátum,Komissiózó,Visszaig.szám\n";
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            rows.forEach(item => {
-                csvContent += `${item.datum},${item.nev},${item.visszaigazolas}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "komissiozo_lista.csv";
-            link.click();
         }
 
         window.onload = renderTable;
