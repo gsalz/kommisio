@@ -1,215 +1,83 @@
-<!DOCTYPE html>
-<html lang="hu">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Komissiózó Nyilvántartás</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #fff;
-            margin: 0;
-            padding: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
+function addItem() {
+    const nev = document.getElementById("nev").value;
+    let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
 
-        .container {
-            width: 100%;
-            max-width: 900px;
-            border: 1px solid #000;
-            padding: 20px;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-        }
+    const now = new Date();
+    const formattedDate = now.toLocaleString('hu-HU', { 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit' 
+    });
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
+    if (!nev || !visszaigazolasok) {
+        alert("Kérlek, töltsd ki mindkét mezőt!");
+        return;
+    }
 
-        .export-btn {
-            display: flex;
-            align-items: center;
-            background: none;
-            border: 1px solid #000;
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-        }
+    let rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+    visszaigazolasok = visszaigazolasok.split(",").map(num => num.trim());
 
-        .export-btn img {
-            width: 16px;
-            height: 16px;
-            margin-left: 5px;
-        }
+    const existingNumbers = rows.map(row => row.visszaigazolas);
+    const duplicateNumbers = visszaigazolasok.filter(num => existingNumbers.includes(num));
 
-        .form-group {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+    if (duplicateNumbers.length > 0) {
+        alert(`Hiba: Ezek a visszaigazoló számok már léteznek: ${duplicateNumbers.join(", ")}`);
+        return;
+    }
 
-        .form-group label {
-            font-size: 14px;
-            width: 150px;
-        }
+    visszaigazolasok.forEach(visszaigazolas => {
+        rows.push({ datum: formattedDate, nev, visszaigazolas, bevitt: false, bevittDatum: "" });
+    });
 
-        .form-group select, .form-group input {
-            width: calc(100% - 160px);
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #000;
-            background: #fff;
-        }
+    localStorage.setItem("komissioData", JSON.stringify(rows));
 
-        .add-btn {
-            margin-top: 15px;
-            width: 100%;
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #000;
-            background: #fff;
-            cursor: pointer;
-        }
+    renderTable();
+    document.getElementById("visszaigazolas").value = "";
+    document.getElementById("nev").value = "";
+}
 
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-            border: 1px solid #000;
-        }
+function renderTable() {
+    const tableBody = document.getElementById("table-body");
+    tableBody.innerHTML = "";
+    const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
 
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #000;
-            font-size: 14px;
-        }
+    rows.forEach((item, index) => {
+        const row = tableBody.insertRow();
+        row.insertCell(0).textContent = item.datum;
+        row.insertCell(1).textContent = item.nev;
+        row.insertCell(2).textContent = item.visszaigazolas;
 
-        th {
-            font-weight: bold;
-            background: #f0f0f0;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <div class="header">
-            <img src="remenyi.png" alt="Reményi Csomagolástechnika">
-            <button class="export-btn" onclick="exportToCSV()">
-                Exportálás
-                <img src="excel.png" alt="Excel ikon">
-            </button>
-        </div>
-
-        <div class="form-group">
-            <label for="nev">Komissiózó</label>
-            <select id="nev">
-                <option value="">Válassz...</option>
-                <option value="Molnár Attila">Molnár Attila</option>
-                <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-                <option value="Lackó István">Lackó István</option>
-                <option value="Czifra Imre">Czifra Imre</option>
-                <option value="Takács József">Takács József</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="visszaigazolas">Visszaig.szám (többet is beírhatsz vesszővel elválasztva)</label>
-            <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678, 91011">
-        </div>
-
-        <button class="add-btn" onclick="addItem()">Hozzáadás</button>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Dátum</th>
-                    <th>Komissiózó</th>
-                    <th>Visszaig.szám</th>
-                    <th>Bevitt ✅</th>
-                    <th>Bevitt Dátum</th>
-                    <th>Törlés</th>
-                </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
-
-    <script>
-        function addItem() {
-            const nev = document.getElementById("nev").value;
-            let visszaigazolasok = document.getElementById("visszaigazolas").value;
-
+        // Bevitt checkbox
+        const checkCell = row.insertCell(3);
+        const checkBox = document.createElement("input");
+        checkBox.type = "checkbox";
+        checkBox.checked = item.bevitt;
+        checkBox.onclick = function () {
             const now = new Date();
-            const formattedDate = now.toLocaleString('hu-HU');
-
-            if (!nev || !visszaigazolasok) {
-                alert("Kérlek, töltsd ki mindkét mezőt!");
-                return;
-            }
-
-            let rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-            visszaigazolasok = visszaigazolasok.split(",").map(num => num.trim());
-
-            const existingNumbers = rows.map(row => row.visszaigazolas);
-            const duplicateNumbers = visszaigazolasok.filter(num => existingNumbers.includes(num));
-
-            if (duplicateNumbers.length > 0) {
-                alert(`Hiba: Ezek a visszaigazoló számok már léteznek: ${duplicateNumbers.join(", ")}`);
-                return;
-            }
-
-            visszaigazolasok.forEach(visszaigazolas => {
-                rows.push({ datum: formattedDate, nev, visszaigazolas, bevitt: false, bevittDatum: "" });
-            });
-
+            rows[index].bevitt = checkBox.checked;
+            rows[index].bevittDatum = checkBox.checked ? now.toLocaleString('hu-HU', { 
+                year: 'numeric', month: '2-digit', day: '2-digit', 
+                hour: '2-digit', minute: '2-digit' 
+            }) : "";
             localStorage.setItem("komissioData", JSON.stringify(rows));
-
             renderTable();
-            document.getElementById("visszaigazolas").value = "";
-            document.getElementById("nev").value = "";
-        }
+        };
+        checkCell.appendChild(checkBox);
 
-        function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt;Bevitt Dátum\n";
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+        // Bevitt dátum
+        const bevittDatumCell = row.insertCell(4);
+        bevittDatumCell.textContent = item.bevittDatum || "-";
 
-            rows.forEach(item => {
-                csvContent += `${item.datum};${item.nev};${item.visszaigazolas};${item.bevitt ? "Igen" : "Nem"};${item.bevittDatum}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.href = encodedUri;
-            link.download = "komissiozo_lista.csv";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function renderTable() {
-            const tableBody = document.getElementById("table-body");
-            tableBody.innerHTML = "";
-            const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
-
-            rows.forEach((item, index) => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = item.datum;
-                row.insertCell(1).textContent = item.nev;
-                row.insertCell(2).textContent = item.visszaigazolas;
-            });
-        }
-
-        window.onload = renderTable;
-    </script>
-
-</body>
-</html>
+        // Törlés gomb
+        const deleteCell = row.insertCell(5);
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "❌";
+        deleteButton.onclick = function () {
+            if (confirm("Biztosan törölni szeretnéd ezt a sort?")) {
+                rows.splice(index, 1);
+                localStorage.setItem("komissioData", JSON.stringify(rows));
+                renderTable();
+            }
+        };
+        deleteCell.appendChild(deleteButton);
+    });
+}
