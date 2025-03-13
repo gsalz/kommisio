@@ -157,6 +157,13 @@
             }
 
             const rows = JSON.parse(localStorage.getItem("komissioData") || "[]");
+
+            // 🔥 DUPLIKÁCIÓ ELLENŐRZÉS: Ha már létezik a visszaigazoló szám, hibaüzenetet dob!
+            if (rows.some(row => row.visszaigazolas === visszaigazolas)) {
+                alert("Hiba: Ez a visszaigazoló szám már létezik!");
+                return;
+            }
+
             rows.push({ datum: formattedDate, nev, visszaigazolas });
             localStorage.setItem("komissioData", JSON.stringify(rows));
 
