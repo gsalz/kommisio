@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Komissiózó Admin</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Komissió Admin" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
+    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .export-btn { border: 1px solid #000; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; align-items: center; }
+    .export-btn img { width: 16px; margin-left: 5px; }
+    .form-group { display: flex; margin-bottom: 10px; }
+    .form-group label { width: 150px; }
+    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; }
+    .add-btn { width: 100%; padding: 8px; border: 1px solid #000; font-size: 14px; cursor: pointer; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; text-align: left; }
+    th { background: #f0f0f0; }
+    .import-file { margin-left: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
+      <div>
+        <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
+        <input type="file" class="import-file" accept=".xlsx" onchange="importFromExcel(event)" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="nev">Komissiózó</label>
+      <select id="nev">
+        <option value="">Válassz...</option>
+        <option value="Molnár Attila">Molnár Attila</option>
+        <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+        <option value="Lackó István">Lackó István</option>
+        <option value="Czifra Imre">Czifra Imre</option>
+        <option value="Takács József">Takács József</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+    </div>
+
+    <button class="add-btn" onclick="addItem()">Hozzáadás</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dátum</th>
+          <th>Komissiózó</th>
+          <th>Visszaig.szám</th>
+          <th>Bevitt</th>
+          <th>Bevitt Dátum</th>
+          <th>Törlés</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
+      authDomain: "remenyikeresztur.firebaseapp.com",
+      projectId: "remenyikeresztur",
+      storageBucket: "remenyikeresztur.firebasestorage.app",
+      messagingSenderId: "981331750744",
+      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d",
+      measurementId: "G-CSQP9CS2QD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const colRef = collection(db, "komissiozas");
+
+    const tableBody = document.getElementById("table-body");
+
+    window.addItem = async () => {
+      const nev = document.getElementById("nev").value;
+      let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
+
+      if (!nev || !visszaigazolasok) {
+        alert("Kérlek, töltsd ki mindkét mezőt!");
+        return;
+      }
+
+      visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
+
+      const snapshot = await getDocs(colRef);
+      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
+      if (duplikalt.length > 0) {
+        alert(`❗️ Ezek a visszaigazolások már szerepelnek: ${duplikalt.join(", ")}`);
+        return;
+      }
+
+      const now = new Date();
+      const formatted = now.toLocaleString('hu-HU');
+
+      for (let szam of visszaigazolasok) {
+        await addDoc(colRef, {
+          datum: formatted,
+          nev,
+          visszaigazolas: szam,
+          bevitt: false,
+          bevittDatum: "",
+          timestamp: Date.now()
+        });
+      }
+
+      document.getElementById("nev").value = "";
+      document.getElementById("visszaigazolas").value = "";
+    };
+
+    onSnapshot(query(colRef, orderBy("timestamp")), (snapshot) => {
+      tableBody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        const row = tableBody.insertRow();
+
+        row.insertCell(0).textContent = d.datum;
+        row.insertCell(1).textContent = d.nev;
+        row.insertCell(2).textContent = d.visszaigazolas;
+
+        const checkCell = row.insertCell(3);
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = d.bevitt;
+        check.onclick = () => {
+          const updated = {
+            bevitt: check.checked,
+            bevittDatum: check.checked ? new Date().toLocaleString("hu-HU") : ""
+          };
+          updateDoc(doc(db, "komissiozas", docSnap.id), updated);
+        };
+        checkCell.appendChild(check);
+
+        row.insertCell(4).textContent = d.bevittDatum || "";
+
+        const delCell = row.insertCell(5);
+        const btn = document.createElement("button");
+        btn.textContent = "❌";
+        btn.onclick = () => {
+          if (confirm("Biztosan törlöd?")) {
+            deleteDoc(doc(db, "komissiozas", docSnap.id));
+          }
+        };
+        delCell.appendChild(btn);
+      });
+    });
+
+    window.exportToCSV = async () => {
+      const snapshot = await getDocs(colRef);
+      let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt;Bevitt Dátum\n";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""};${d.bevittDatum || ""}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "komissiozo_export.csv";
+      a.click();
+    };
+
+    window.importFromExcel = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        const snapshot = await getDocs(colRef);
+        const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+        for (let row of json) {
+          if (existing.includes(row.visszaigazolas)) continue;
+          if (!row.datum || !row.nev || !row.visszaigazolas) continue;
+
+          await addDoc(colRef, {
+            datum: row.datum,
+            nev: row.nev,
+            visszaigazolas: row.visszaigazolas,
+            bevitt: false,
+            bevittDatum: "",
+            timestamp: Date.now()
+          });
+        }
+        alert("Importálás kész!");
+      };
+      reader.readAsArrayBuffer(file);
+    };
+  </script>
+</body>
+</html>
