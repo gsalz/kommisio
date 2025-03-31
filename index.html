@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ReményiKeresztúrKommissió</title>
 
-  <!-- 🧠 PWA támogatás service worker nélkül -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
@@ -80,6 +79,17 @@
     import {
       getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 🔧 Excel dátum átalakító
+    function excelDateToString(excelDate) {
+      if (typeof excelDate === "number") {
+        return new Date(Math.round((excelDate - 25569) * 86400 * 1000)).toLocaleString("hu-HU");
+      }
+      if (typeof excelDate === "string") {
+        return excelDate;
+      }
+      return "";
+    }
 
     const firebaseConfig = {
       apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
@@ -201,14 +211,15 @@
           if (!row.datum || !row.nev || !row.visszaigazolas) continue;
 
           await addDoc(colRef, {
-            datum: row.datum,
+            datum: excelDateToString(row.datum),
             nev: row.nev,
-            visszaigazolas: row.visszaigazolas,
+            visszaigazolas: row.visszaigazolas.toString(),
             bevitt: false,
             bevittDatum: ""
           });
         }
-        alert("Importálás kész!");
+
+        alert("✅ Importálás kész!");
       };
       reader.readAsArrayBuffer(file);
     };
