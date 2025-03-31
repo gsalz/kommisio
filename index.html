@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Komissiózó Nyilvántartás</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -147,7 +148,6 @@
         function addItem() {
             const nev = document.getElementById("nev").value;
             let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
-
             const now = new Date();
             const formattedDate = now.toLocaleString('hu-HU');
 
