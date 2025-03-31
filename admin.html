@@ -3,59 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Komissió Admin</title>
+  <title>Admin – ReményiKeresztúrKommissió</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Komissió Admin" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="ReményiKeresztúrKommissió" />
   <style>
-    body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
-    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .export-btn { border: 1px solid #000; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; align-items: center; }
-    .export-btn img { width: 16px; margin-left: 5px; }
-    .form-group { display: flex; margin-bottom: 10px; }
-    .form-group label { width: 150px; }
-    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; }
-    .add-btn { width: 100%; padding: 8px; border: 1px solid #000; font-size: 14px; cursor: pointer; margin-top: 10px; }
+    body { font-family: Arial; margin: 0; padding: 40px; display: flex; justify-content: center; }
+    .container { max-width: 1000px; width: 100%; border: 1px solid #000; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; text-align: left; }
+    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
     th { background: #f0f0f0; }
-    .import-file { margin-left: 10px; }
+    input[type="text"], select { padding: 6px; width: 100%; }
+    button { cursor: pointer; padding: 6px 10px; }
   </style>
 </head>
 <body>
-
   <div class="container">
-    <div class="header">
-      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
-      <div>
-        <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
-        <input type="file" class="import-file" accept=".xlsx" onchange="importFromExcel(event)" />
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="nev">Komissiózó</label>
+    <h2>Admin felület</h2>
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
       <select id="nev">
-        <option value="">Válassz...</option>
+        <option value="">Válassz komissiózót</option>
         <option value="Molnár Attila">Molnár Attila</option>
         <option value="Kovács Szabolcs">Kovács Szabolcs</option>
         <option value="Lackó István">Lackó István</option>
         <option value="Czifra Imre">Czifra Imre</option>
         <option value="Takács József">Takács József</option>
       </select>
+      <input type="text" id="visszaigazolas" placeholder="Visszaig.szám (több is, vesszővel)" />
     </div>
-
-    <div class="form-group">
-      <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
-    </div>
-
-    <button class="add-btn" onclick="addItem()">Hozzáadás</button>
-
+    <button onclick="addItem()">➕ Hozzáadás</button>
     <table>
       <thead>
         <tr>
@@ -63,6 +42,7 @@
           <th>Komissiózó</th>
           <th>Visszaig.szám</th>
           <th>Bevitt</th>
+          <th>Bevitt Dátum</th>
           <th>Törlés</th>
         </tr>
       </thead>
@@ -73,7 +53,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy
+      getFirestore, collection, addDoc, deleteDoc, doc,
+      onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -92,50 +73,22 @@
 
     const tableBody = document.getElementById("table-body");
 
-    window.addItem = async () => {
-      const nev = document.getElementById("nev").value;
-      let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
-
-      if (!nev || !visszaigazolasok) {
-        alert("Kérlek, töltsd ki mindkét mezőt!");
-        return;
+    async function ensureTimestamps() {
+      const allDocs = await getDocs(colRef);
+      for (const d of allDocs.docs) {
+        const data = d.data();
+        if (!data.timestamp) {
+          await updateDoc(doc(db, "komissiozas", d.id), {
+            timestamp: serverTimestamp()
+          });
+        }
       }
+    }
 
-      visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
-
-      const snapshot = await getDocs(colRef);
-      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-
-      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
-      if (duplikalt.length > 0) {
-        alert(`❗️ Ezek a visszaigazolások már szerepelnek: ${duplikalt.join(", ")}`);
-        return;
-      }
-
-      const now = new Date();
-      const formatted = now.toLocaleString('hu-HU');
-
-      for (let szam of visszaigazolasok) {
-        await addDoc(colRef, {
-          datum: formatted,
-          nev,
-          visszaigazolas: szam,
-          bevitt: false,
-          bevittDatum: "",
-          timestamp: Date.now()
-        });
-      }
-
-      document.getElementById("nev").value = "";
-      document.getElementById("visszaigazolas").value = "";
-    };
-
-    onSnapshot(query(colRef, orderBy("timestamp")), (snapshot) => {
+    onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
-        if (!d.timestamp) return;
-
         const row = tableBody.insertRow();
         row.insertCell(0).textContent = d.datum;
         row.insertCell(1).textContent = d.nev;
@@ -146,15 +99,16 @@
         check.type = "checkbox";
         check.checked = d.bevitt;
         check.onclick = () => {
-          const updated = {
+          updateDoc(doc(db, "komissiozas", docSnap.id), {
             bevitt: check.checked,
             bevittDatum: check.checked ? new Date().toLocaleString("hu-HU") : ""
-          };
-          updateDoc(doc(db, "komissiozas", docSnap.id), updated);
+          });
         };
         checkCell.appendChild(check);
 
-        const delCell = row.insertCell(4);
+        row.insertCell(4).textContent = d.bevittDatum || "";
+
+        const delCell = row.insertCell(5);
         const btn = document.createElement("button");
         btn.textContent = "❌";
         btn.onclick = () => {
@@ -166,50 +120,38 @@
       });
     });
 
-    window.exportToCSV = async () => {
+    window.addItem = async () => {
+      const nev = document.getElementById("nev").value;
+      let vissza = document.getElementById("visszaigazolas").value.trim();
+
+      if (!nev || !vissza) {
+        alert("Kérlek tölts ki minden mezőt!");
+        return;
+      }
+
+      vissza = vissza.split(",").map(s => s.trim());
       const snapshot = await getDocs(colRef);
-      let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt\n";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "komissiozo_export.csv";
-      a.click();
+      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+      const now = new Date();
+      const formatted = now.toLocaleString("hu-HU");
+
+      for (let szam of vissza) {
+        if (existing.includes(szam)) continue;
+        await addDoc(colRef, {
+          datum: formatted,
+          nev,
+          visszaigazolas: szam,
+          bevitt: false,
+          bevittDatum: "",
+          timestamp: new Date()
+        });
+      }
+
+      document.getElementById("nev").value = "";
+      document.getElementById("visszaigazolas").value = "";
     };
 
-    window.importFromExcel = async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet);
-
-        const snapshot = await getDocs(colRef);
-        const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-
-        for (let row of json) {
-          if (existing.includes(row.visszaigazolas)) continue;
-          if (!row.datum || !row.nev || !row.visszaigazolas) continue;
-
-          await addDoc(colRef, {
-            datum: row.datum,
-            nev: row.nev,
-            visszaigazolas: row.visszaigazolas,
-            bevitt: false,
-            bevittDatum: "",
-            timestamp: Date.now()
-          });
-        }
-        alert("Importálás kész!");
-      };
-      reader.readAsArrayBuffer(file);
-    };
+    ensureTimestamps(); // újraindításkor is hozzárendel hiányzó timestampet
   </script>
 </body>
 </html>
