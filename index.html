@@ -77,10 +77,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy
+      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // 🔧 Excel dátum átalakító
+    // Excel dátum konvertáló
     function excelDateToString(excelDate) {
       if (typeof excelDate === "number") {
         return new Date(Math.round((excelDate - 25569) * 86400 * 1000)).toLocaleString("hu-HU");
@@ -142,11 +142,16 @@
     };
 
     const tableBody = document.getElementById("table-body");
-    onSnapshot(query(colRef, orderBy("datum")), (snapshot) => {
-      tableBody.innerHTML = "";
+
+    onSnapshot(colRef, (snapshot) => {
+      const rows = [];
       snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        const row = tableBody.insertRow();
+        rows.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      tableBody.innerHTML = "";
+      rows.forEach((d) => {
+        const row = tableBody.insertRow(-1); // ← új sor a táblázat ALJÁRA
 
         row.insertCell(0).textContent = d.datum;
         row.insertCell(1).textContent = d.nev;
@@ -161,7 +166,7 @@
             bevitt: check.checked,
             bevittDatum: check.checked ? new Date().toLocaleString("hu-HU") : ""
           };
-          updateDoc(doc(db, "komissiozas", docSnap.id), updated);
+          updateDoc(doc(db, "komissiozas", d.id), updated);
         };
         checkCell.appendChild(check);
 
@@ -172,7 +177,7 @@
         btn.textContent = "❌";
         btn.onclick = () => {
           if (confirm("Biztosan törlöd?")) {
-            deleteDoc(doc(db, "komissiozas", docSnap.id));
+            deleteDoc(doc(db, "komissiozas", d.id));
           }
         };
         delCell.appendChild(btn);
