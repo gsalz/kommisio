@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Komissiózó – Raktáros nézet</title>
+  <style>
+    body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
+    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
+    h1 { text-align: center; font-size: 20px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; text-align: left; }
+    th { background: #f0f0f0; }
+    .bevitt { color: green; font-weight: bold; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Komissiózások – Raktáros nézet</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Komissiózó</th>
+          <th>Visszaig.szám</th>
+          <th>Bevitt</th>
+          <th>Törlés</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, collection, doc, deleteDoc, onSnapshot, query, orderBy
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
+      authDomain: "remenyikeresztur.firebaseapp.com",
+      projectId: "remenyikeresztur",
+      storageBucket: "remenyikeresztur.firebasestorage.app",
+      messagingSenderId: "981331750744",
+      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d",
+      measurementId: "G-CSQP9CS2QD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const colRef = collection(db, "komissiozas");
+
+    const tableBody = document.getElementById("table-body");
+
+    onSnapshot(query(colRef, orderBy("timestamp")), (snapshot) => {
+      tableBody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        const row = tableBody.insertRow();
+
+        row.insertCell(0).textContent = d.nev;
+        row.insertCell(1).textContent = d.visszaigazolas;
+
+        const bevittCell = row.insertCell(2);
+        bevittCell.className = "bevitt";
+        bevittCell.textContent = d.bevitt ? "✅" : "";
+
+        const delCell = row.insertCell(3);
+        const btn = document.createElement("button");
+        btn.textContent = "❌";
+        btn.onclick = () => {
+          if (confirm("Biztosan törlöd?")) {
+            deleteDoc(doc(db, "komissiozas", docSnap.id));
+          }
+        };
+        delCell.appendChild(btn);
+      });
+    });
+  </script>
+</body>
+</html>
