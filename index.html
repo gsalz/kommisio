@@ -4,14 +4,69 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ReményiKeresztúrKommissió</title>
+  <style>
+    body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
+    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .export-btn { border: 1px solid #000; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; align-items: center; }
+    .export-btn img { width: 16px; margin-left: 5px; }
+    .form-group { display: flex; margin-bottom: 10px; }
+    .form-group label { width: 150px; }
+    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; }
+    .add-btn { width: 100%; padding: 8px; border: 1px solid #000; font-size: 14px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
+    th { background: #f0f0f0; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
+      <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
+    </div>
+
+    <div class="form-group">
+      <label for="nev">Komissiózó</label>
+      <select id="nev">
+        <option value="">Válassz...</option>
+        <option value="Molnár Attila">Molnár Attila</option>
+        <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+        <option value="Lackó István">Lackó István</option>
+        <option value="Czifra Imre">Czifra Imre</option>
+        <option value="Takács József">Takács József</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+    </div>
+
+    <button class="add-btn" onclick="addItem()">Hozzáadás</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dátum</th>
+          <th>Komissiózó</th>
+          <th>Visszaig.szám</th>
+          <th>Bevitt</th>
+          <th>Bevitt Dátum</th>
+          <th>Törlés</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
   <script type="module">
-    // Firebase SDK-k importálása
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, orderBy
+      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Firebase config - ez a Te projekted adataival
     const firebaseConfig = {
       apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
       authDomain: "remenyikeresztur.firebaseapp.com",
@@ -36,20 +91,14 @@
         return;
       }
 
-      const snapshot = await query(colRef);
-      const existingDocs = [];
-      onSnapshot(colRef, (snap) => {
-        snap.forEach(doc => {
-          existingDocs.push(doc.data().visszaigazolas);
-        });
-      });
-
       visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
-      for (let szam of visszaigazolasok) {
-        if (existingDocs.includes(szam)) {
-          alert(`A ${szam} szám már létezik!`);
-          return;
-        }
+      const snapshot = await getDocs(colRef);
+      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
+      if (duplikalt.length > 0) {
+        alert(`❗️ Ezek a visszaigazolások már szerepelnek: ${duplikalt.join(", ")}`);
+        return;
       }
 
       const now = new Date();
@@ -110,77 +159,18 @@
 
     // Exportálás CSV-be
     window.exportToCSV = async () => {
-      const snapshot = await query(colRef);
+      const snapshot = await getDocs(colRef);
       let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt;Bevitt Dátum\n";
-      onSnapshot(colRef, (snap) => {
-        snap.forEach(doc => {
-          const d = doc.data();
-          csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""};${d.bevittDatum || ""}\n`;
-        });
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "komissiozo_export.csv";
-        a.click();
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""};${d.bevittDatum || ""}\n`;
       });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "komissiozo_export.csv";
+      a.click();
     };
   </script>
-
-  <style>
-    body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
-    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .export-btn { border: 1px solid #000; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; align-items: center; }
-    .export-btn img { width: 16px; margin-left: 5px; }
-    .form-group { display: flex; margin-bottom: 10px; }
-    .form-group label { width: 150px; }
-    .form-group select, .form-group input { flex: 1; padding: 8px; }
-    .add-btn { width: 100%; padding: 8px; border: 1px solid #000; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
-    th { background: #f0f0f0; }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
-      <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
-    </div>
-
-    <div class="form-group">
-      <label for="nev">Komissiózó</label>
-      <select id="nev">
-        <option value="">Válassz...</option>
-        <option value="Molnár Attila">Molnár Attila</option>
-        <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-        <option value="Lackó István">Lackó István</option>
-        <option value="Czifra Imre">Czifra Imre</option>
-        <option value="Takács József">Takács József</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label for="visszaigazolas">Visszaig.szám</label>
-      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
-    </div>
-
-    <button class="add-btn" onclick="addItem()">Hozzáadás</button>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Dátum</th>
-          <th>Komissiózó</th>
-          <th>Visszaig.szám</th>
-          <th>Bevitt</th>
-          <th>Bevitt Dátum</th>
-          <th>Törlés</th>
-        </tr>
-      </thead>
-      <tbody id="table-body"></tbody>
-    </table>
-  </div>
 </body>
 </html>
