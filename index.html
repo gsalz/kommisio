@@ -4,12 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ReményiKeresztúrKommissió</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon-192.png" type="image/png" />
-  <meta name="theme-color" content="#ffffff" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="ReményiKeresztúrKommissió" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
@@ -74,18 +68,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query
+      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy, Timestamp
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    function excelDateToString(excelDate) {
-      if (typeof excelDate === "number") {
-        return new Date(Math.round((excelDate - 25569) * 86400 * 1000)).toLocaleString("hu-HU");
-      }
-      if (typeof excelDate === "string") {
-        return excelDate;
-      }
-      return "";
-    }
 
     const firebaseConfig = {
       apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
@@ -121,11 +105,11 @@
       }
 
       const now = new Date();
-      const formatted = now.toLocaleString('hu-HU');
+      const timestamp = Timestamp.fromDate(now);
 
       for (let szam of visszaigazolasok) {
         await addDoc(colRef, {
-          datum: formatted,
+          timestamp,
           nev,
           visszaigazolas: szam,
           bevitt: false
@@ -138,19 +122,15 @@
 
     const tableBody = document.getElementById("table-body");
 
-    onSnapshot(query(colRef), (snapshot) => {
-      const rows = [];
-      snapshot.forEach(docSnap => {
-        rows.push({ id: docSnap.id, ...docSnap.data() });
-      });
-
-      // Dátum szerint növekvő sorrendbe rendezés
-      rows.sort((a, b) => new Date(a.datum) - new Date(b.datum));
-
+    onSnapshot(query(colRef, orderBy("timestamp")), (snapshot) => {
       tableBody.innerHTML = "";
-      rows.forEach((d) => {
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
         const row = tableBody.insertRow();
-        row.insertCell(0).textContent = d.datum;
+
+        const date = d.timestamp?.toDate().toLocaleString("hu-HU") || "";
+
+        row.insertCell(0).textContent = date;
         row.insertCell(1).textContent = d.nev;
         row.insertCell(2).textContent = d.visszaigazolas;
 
@@ -160,7 +140,7 @@
         check.checked = d.bevitt;
         check.onclick = () => {
           const updated = { bevitt: check.checked };
-          updateDoc(doc(db, "komissiozas", d.id), updated);
+          updateDoc(doc(db, "komissiozas", docSnap.id), updated);
         };
         checkCell.appendChild(check);
 
@@ -169,7 +149,7 @@
         btn.textContent = "❌";
         btn.onclick = () => {
           if (confirm("Biztosan törlöd?")) {
-            deleteDoc(doc(db, "komissiozas", d.id));
+            deleteDoc(doc(db, "komissiozas", docSnap.id));
           }
         };
         delCell.appendChild(btn);
@@ -181,7 +161,8 @@
       let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt\n";
       snapshot.forEach(doc => {
         const d = doc.data();
-        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""}\n`;
+        const date = d.timestamp?.toDate().toLocaleString("hu-HU") || "";
+        csv += `${date};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""}\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
@@ -207,8 +188,11 @@
           if (existing.includes(row.visszaigazolas)) continue;
           if (!row.datum || !row.nev || !row.visszaigazolas) continue;
 
+          const datum = new Date(row.datum);
+          const timestamp = Timestamp.fromDate(datum);
+
           await addDoc(colRef, {
-            datum: excelDateToString(row.datum),
+            timestamp,
             nev: row.nev,
             visszaigazolas: row.visszaigazolas.toString(),
             bevitt: false
