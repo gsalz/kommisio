@@ -64,7 +64,6 @@
           <th>Komissiózó</th>
           <th>Visszaig.szám</th>
           <th>Bevitt</th>
-          <th>Bevitt Dátum</th>
           <th>Törlés</th>
         </tr>
       </thead>
@@ -129,8 +128,7 @@
           datum: formatted,
           nev,
           visszaigazolas: szam,
-          bevitt: false,
-          bevittDatum: ""
+          bevitt: false
         });
       }
 
@@ -146,7 +144,7 @@
         rows.push({ id: docSnap.id, ...docSnap.data() });
       });
 
-      // Rendezés dátum szerint növekvő sorrendbe (régi adatok felül)
+      // Dátum szerint növekvő sorrendbe rendezés
       rows.sort((a, b) => new Date(a.datum) - new Date(b.datum));
 
       tableBody.innerHTML = "";
@@ -161,17 +159,12 @@
         check.type = "checkbox";
         check.checked = d.bevitt;
         check.onclick = () => {
-          const updated = {
-            bevitt: check.checked,
-            bevittDatum: check.checked ? new Date().toLocaleString("hu-HU") : ""
-          };
+          const updated = { bevitt: check.checked };
           updateDoc(doc(db, "komissiozas", d.id), updated);
         };
         checkCell.appendChild(check);
 
-        row.insertCell(4).textContent = d.bevittDatum || "";
-
-        const delCell = row.insertCell(5);
+        const delCell = row.insertCell(4);
         const btn = document.createElement("button");
         btn.textContent = "❌";
         btn.onclick = () => {
@@ -185,10 +178,10 @@
 
     window.exportToCSV = async () => {
       const snapshot = await getDocs(colRef);
-      let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt;Bevitt Dátum\n";
+      let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt\n";
       snapshot.forEach(doc => {
         const d = doc.data();
-        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""};${d.bevittDatum || ""}\n`;
+        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""}\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
@@ -218,8 +211,7 @@
             datum: excelDateToString(row.datum),
             nev: row.nev,
             visszaigazolas: row.visszaigazolas.toString(),
-            bevitt: false,
-            bevittDatum: ""
+            bevitt: false
           });
         }
 
