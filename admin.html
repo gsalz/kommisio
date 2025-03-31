@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Komissiózó Admin</title>
+  <title>Komissió Admin</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
@@ -63,7 +63,6 @@
           <th>Komissiózó</th>
           <th>Visszaig.szám</th>
           <th>Bevitt</th>
-          <th>Bevitt Dátum</th>
           <th>Törlés</th>
         </tr>
       </thead>
@@ -135,7 +134,7 @@
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
-        if (!d.timestamp) return; // Csak azok, akiknél van timestamp
+        if (!d.timestamp) return;
 
         const row = tableBody.insertRow();
         row.insertCell(0).textContent = d.datum;
@@ -155,9 +154,7 @@
         };
         checkCell.appendChild(check);
 
-        row.insertCell(4).textContent = d.bevittDatum || "";
-
-        const delCell = row.insertCell(5);
+        const delCell = row.insertCell(4);
         const btn = document.createElement("button");
         btn.textContent = "❌";
         btn.onclick = () => {
@@ -171,10 +168,10 @@
 
     window.exportToCSV = async () => {
       const snapshot = await getDocs(colRef);
-      let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt;Bevitt Dátum\n";
+      let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt\n";
       snapshot.forEach(doc => {
         const d = doc.data();
-        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""};${d.bevittDatum || ""}\n`;
+        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""}\n`;
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
