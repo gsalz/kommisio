@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ReményiKeresztúrKommissió</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
     .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
@@ -17,6 +18,7 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
     th { background: #f0f0f0; }
+    .import-file { margin-top: 10px; }
   </style>
 </head>
 
@@ -24,7 +26,10 @@
   <div class="container">
     <div class="header">
       <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
-      <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
+      <div>
+        <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
+        <input type="file" class="import-file" accept=".xlsx" onchange="importFromExcel(event)" />
+      </div>
     </div>
 
     <div class="form-group">
@@ -81,7 +86,6 @@
     const db = getFirestore(app);
     const colRef = collection(db, "komissiozas");
 
-    // Hozzáadás
     window.addItem = async () => {
       const nev = document.getElementById("nev").value;
       let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
@@ -118,7 +122,6 @@
       document.getElementById("visszaigazolas").value = "";
     };
 
-    // Megjelenítés
     const tableBody = document.getElementById("table-body");
     onSnapshot(query(colRef, orderBy("datum")), (snapshot) => {
       tableBody.innerHTML = "";
@@ -157,7 +160,6 @@
       });
     });
 
-    // Exportálás CSV-be
     window.exportToCSV = async () => {
       const snapshot = await getDocs(colRef);
       let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt;Bevitt Dátum\n";
@@ -170,6 +172,36 @@
       a.href = URL.createObjectURL(blob);
       a.download = "komissiozo_export.csv";
       a.click();
+    };
+
+    window.importFromExcel = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        const snapshot = await getDocs(colRef);
+        const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+        for (let row of json) {
+          if (existing.includes(row.visszaigazolas)) continue;
+          if (!row.datum || !row.nev || !row.visszaigazolas) continue;
+
+          await addDoc(colRef, {
+            datum: row.datum,
+            nev: row.nev,
+            visszaigazolas: row.visszaigazolas,
+            bevitt: false,
+            bevittDatum: ""
+          });
+        }
+        alert("Importálás kész!");
+      };
+      reader.readAsArrayBuffer(file);
     };
   </script>
 </body>
