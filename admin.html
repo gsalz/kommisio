@@ -135,8 +135,9 @@
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
-        const row = tableBody.insertRow();
+        if (!d.timestamp) return; // Csak azok, akiknél van timestamp
 
+        const row = tableBody.insertRow();
         row.insertCell(0).textContent = d.datum;
         row.insertCell(1).textContent = d.nev;
         row.insertCell(2).textContent = d.visszaigazolas;
