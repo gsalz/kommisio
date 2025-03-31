@@ -4,37 +4,60 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin – ReményiKeresztúrKommissió</title>
+
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="ReményiKeresztúrKommissió" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial; margin: 0; padding: 40px; display: flex; justify-content: center; }
+    body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
     .container { max-width: 1000px; width: 100%; border: 1px solid #000; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; margin-bottom: 20px; padding-bottom: 10px; }
+    .export-btn { display: flex; align-items: center; border: 1px solid #000; padding: 6px 10px; font-size: 12px; background: #fff; cursor: pointer; margin-left: 10px; }
+    .export-btn img { width: 16px; margin-left: 5px; }
+    .form-group { display: flex; margin-bottom: 10px; }
+    .form-group label { width: 150px; font-size: 14px; }
+    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; border: 1px solid #000; }
+    .add-btn { width: 100%; padding: 8px; font-size: 14px; border: 1px solid #000; background: #fff; cursor: pointer; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
     th { background: #f0f0f0; }
-    input[type="text"], select { padding: 6px; width: 100%; }
-    button { cursor: pointer; padding: 6px 10px; }
+    .import-file { margin-left: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Admin felület</h2>
-    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+    <div class="header">
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
+      <div>
+        <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
+        <input type="file" class="import-file" accept=".xlsx" onchange="importFromExcel(event)" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="nev">Komissiózó</label>
       <select id="nev">
-        <option value="">Válassz komissiózót</option>
+        <option value="">Válassz...</option>
         <option value="Molnár Attila">Molnár Attila</option>
         <option value="Kovács Szabolcs">Kovács Szabolcs</option>
         <option value="Lackó István">Lackó István</option>
         <option value="Czifra Imre">Czifra Imre</option>
         <option value="Takács József">Takács József</option>
       </select>
-      <input type="text" id="visszaigazolas" placeholder="Visszaig.szám (több is, vesszővel)" />
     </div>
-    <button onclick="addItem()">➕ Hozzáadás</button>
+
+    <div class="form-group">
+      <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+    </div>
+
+    <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
+
     <table>
       <thead>
         <tr>
@@ -42,7 +65,6 @@
           <th>Komissiózó</th>
           <th>Visszaig.szám</th>
           <th>Bevitt</th>
-          <th>Bevitt Dátum</th>
           <th>Törlés</th>
         </tr>
       </thead>
@@ -71,13 +93,10 @@
     const db = getFirestore(app);
     const colRef = collection(db, "komissiozas");
 
-    const tableBody = document.getElementById("table-body");
-
     async function ensureTimestamps() {
       const allDocs = await getDocs(colRef);
       for (const d of allDocs.docs) {
-        const data = d.data();
-        if (!data.timestamp) {
+        if (!d.data().timestamp) {
           await updateDoc(doc(db, "komissiozas", d.id), {
             timestamp: serverTimestamp()
           });
@@ -86,10 +105,12 @@
     }
 
     onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
+      const tableBody = document.getElementById("table-body");
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
         const row = tableBody.insertRow();
+
         row.insertCell(0).textContent = d.datum;
         row.insertCell(1).textContent = d.nev;
         row.insertCell(2).textContent = d.visszaigazolas;
@@ -100,15 +121,12 @@
         check.checked = d.bevitt;
         check.onclick = () => {
           updateDoc(doc(db, "komissiozas", docSnap.id), {
-            bevitt: check.checked,
-            bevittDatum: check.checked ? new Date().toLocaleString("hu-HU") : ""
+            bevitt: check.checked
           });
         };
         checkCell.appendChild(check);
 
-        row.insertCell(4).textContent = d.bevittDatum || "";
-
-        const delCell = row.insertCell(5);
+        const delCell = row.insertCell(4);
         const btn = document.createElement("button");
         btn.textContent = "❌";
         btn.onclick = () => {
@@ -142,7 +160,6 @@
           nev,
           visszaigazolas: szam,
           bevitt: false,
-          bevittDatum: "",
           timestamp: new Date()
         });
       }
@@ -151,7 +168,51 @@
       document.getElementById("visszaigazolas").value = "";
     };
 
-    ensureTimestamps(); // újraindításkor is hozzárendel hiányzó timestampet
+    window.exportToCSV = async () => {
+      const snapshot = await getDocs(colRef);
+      let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt\n";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        csv += `${d.datum};${d.nev};${d.visszaigazolas};${d.bevitt ? "✅" : ""}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "komissiozo_export.csv";
+      a.click();
+    };
+
+    window.importFromExcel = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        const snapshot = await getDocs(colRef);
+        const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+        for (let row of json) {
+          if (!row.datum || !row.nev || !row.visszaigazolas) continue;
+          if (existing.includes(row.visszaigazolas)) continue;
+
+          await addDoc(colRef, {
+            datum: row.datum,
+            nev: row.nev,
+            visszaigazolas: row.visszaigazolas,
+            bevitt: false,
+            timestamp: new Date()
+          });
+        }
+        alert("Importálás kész!");
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    ensureTimestamps();
   </script>
 </body>
 </html>
