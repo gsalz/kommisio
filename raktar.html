@@ -3,24 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Komissiózó – Raktáros nézet</title>
+  <title>Raktáros – ReményiKeresztúrKommissió</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="ReményiKeresztúrKommissió" />
+
   <style>
-    body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
+    body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
     .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
-    h1 { text-align: center; font-size: 20px; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .form-group { display: flex; margin-bottom: 10px; }
+    .form-group label { width: 150px; font-size: 14px; }
+    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; border: 1px solid #000; }
+    .add-btn { width: 100%; padding: 8px; font-size: 14px; border: 1px solid #000; background: #fff; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #000; padding: 8px; font-size: 14px; text-align: left; }
     th { background: #f0f0f0; }
-    .bevitt { color: green; font-weight: bold; text-align: center; }
-    .form-group { display: flex; margin-bottom: 10px; }
-    .form-group label { width: 150px; }
-    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; }
-    .add-btn { width: 100%; padding: 8px; border: 1px solid #000; font-size: 14px; cursor: pointer; margin-top: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Komissiózások – Raktáros nézet</h1>
+    <div class="header">
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
+      <h2>Raktáros felület</h2>
+    </div>
 
     <div class="form-group">
       <label for="nev">Komissiózó</label>
@@ -39,14 +48,14 @@
       <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
     </div>
 
-    <button class="add-btn" onclick="addItem()">Hozzáadás</button>
+    <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
 
     <table>
       <thead>
         <tr>
           <th>Komissiózó</th>
           <th>Visszaig.szám</th>
-          <th>Bevitt</th>
+          <th>Bevitt ✅</th>
           <th>Törlés</th>
         </tr>
       </thead>
@@ -57,7 +66,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, getDocs, query, orderBy
+      getFirestore, collection, addDoc, deleteDoc, doc,
+      onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -74,47 +84,19 @@
     const db = getFirestore(app);
     const colRef = collection(db, "komissiozas");
 
-    const tableBody = document.getElementById("table-body");
-
-    window.addItem = async () => {
-      const nev = document.getElementById("nev").value;
-      let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
-
-      if (!nev || !visszaigazolasok) {
-        alert("Kérlek, töltsd ki mindkét mezőt!");
-        return;
+    async function ensureTimestamps() {
+      const allDocs = await getDocs(colRef);
+      for (const d of allDocs.docs) {
+        if (!d.data().timestamp) {
+          await updateDoc(doc(db, "komissiozas", d.id), {
+            timestamp: serverTimestamp()
+          });
+        }
       }
+    }
 
-      visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
-
-      const snapshot = await getDocs(colRef);
-      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-
-      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
-      if (duplikalt.length > 0) {
-        alert(`❗️ Ezek a visszaigazolások már szerepelnek: ${duplikalt.join(", ")}`);
-        return;
-      }
-
-      const now = new Date();
-      const formatted = now.toLocaleString('hu-HU');
-
-      for (let szam of visszaigazolasok) {
-        await addDoc(colRef, {
-          datum: formatted,
-          nev,
-          visszaigazolas: szam,
-          bevitt: false,
-          bevittDatum: "",
-          timestamp: Date.now()
-        });
-      }
-
-      document.getElementById("nev").value = "";
-      document.getElementById("visszaigazolas").value = "";
-    };
-
-    onSnapshot(query(colRef, orderBy("timestamp")), (snapshot) => {
+    onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
+      const tableBody = document.getElementById("table-body");
       tableBody.innerHTML = "";
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
@@ -123,9 +105,10 @@
         row.insertCell(0).textContent = d.nev;
         row.insertCell(1).textContent = d.visszaigazolas;
 
-        const bevittCell = row.insertCell(2);
-        bevittCell.className = "bevitt";
-        bevittCell.textContent = d.bevitt ? "✅" : "";
+        const checkCell = row.insertCell(2);
+        const check = document.createElement("span");
+        check.textContent = d.bevitt ? "✅" : "";
+        checkCell.appendChild(check);
 
         const delCell = row.insertCell(3);
         const btn = document.createElement("button");
@@ -138,6 +121,38 @@
         delCell.appendChild(btn);
       });
     });
+
+    window.addItem = async () => {
+      const nev = document.getElementById("nev").value;
+      let vissza = document.getElementById("visszaigazolas").value.trim();
+
+      if (!nev || !vissza) {
+        alert("Kérlek tölts ki minden mezőt!");
+        return;
+      }
+
+      vissza = vissza.split(",").map(s => s.trim());
+      const snapshot = await getDocs(colRef);
+      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+      const now = new Date();
+      const formatted = now.toLocaleString("hu-HU");
+
+      for (let szam of vissza) {
+        if (existing.includes(szam)) continue;
+        await addDoc(colRef, {
+          datum: formatted,
+          nev,
+          visszaigazolas: szam,
+          bevitt: false,
+          timestamp: new Date()
+        });
+      }
+
+      document.getElementById("nev").value = "";
+      document.getElementById("visszaigazolas").value = "";
+    };
+
+    ensureTimestamps();
   </script>
 </body>
 </html>
