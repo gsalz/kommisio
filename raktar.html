@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Raktáros – ReményiKeresztúrKommissió</title>
 
-  <!-- PWA manifest -->
   <link rel="manifest" href="raktar-manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
@@ -52,6 +51,17 @@
       flex-wrap: wrap;
     }
 
+    .form-image {
+      max-width: 160px;
+    }
+
+    .form-image img {
+      width: 100%;
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+    }
+
     .form-fields {
       flex: 1;
       min-width: 280px;
@@ -89,14 +99,6 @@
       margin-top: 10px;
     }
 
-    .form-image img {
-      max-width: 160px;
-      height: auto;
-      margin-top: 5px;
-      user-select: none;
-      pointer-events: none;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -123,6 +125,9 @@
     </div>
 
     <div class="form-row">
+      <div class="form-image">
+        <img src="image.png" alt="Targonca illusztráció" />
+      </div>
       <div class="form-fields">
         <div class="form-group">
           <label for="nev">Komissiózó</label>
@@ -142,10 +147,6 @@
         </div>
 
         <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
-      </div>
-
-      <div class="form-image">
-        <img src="image.png" alt="Targonca" />
       </div>
     </div>
 
