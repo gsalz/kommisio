@@ -3,158 +3,146 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Raktáros – ReményiKeresztúrKommissió</title>
+  <title>Raktáros Komissió</title>
 
-  <!-- 🧠 PWA manifest kizárólag a raktáros nézethez -->
-  <link rel="manifest" href="raktar-manifest.json" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="Reményi Raktáros" />
+  <meta name="apple-mobile-web-app-title" content="RaktarKomissio" />
 
   <style>
-    body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
+    body { font-family: Arial; background: #fff; margin: 0; padding: 20px; display: flex; justify-content: center; }
     .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
-    .header { text-align: center; margin-bottom: 20px; }
     .form-group { display: flex; margin-bottom: 10px; }
-    .form-group label { width: 150px; font-size: 14px; }
-    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; border: 1px solid #000; }
-    .add-btn { width: 100%; padding: 8px; font-size: 14px; border: 1px solid #000; background: #fff; cursor: pointer; }
+    .form-group label { width: 150px; }
+    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; }
+    .add-btn { width: 100%; padding: 8px; border: 1px solid #000; font-size: 14px; cursor: pointer; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; text-align: left; }
+    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
     th { background: #f0f0f0; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
-      <h2>Raktáros felület</h2>
-    </div>
 
-    <div class="form-group">
-      <label for="nev">Komissiózó</label>
-      <select id="nev">
-        <option value="">Válassz...</option>
-        <option value="Molnár Attila">Molnár Attila</option>
-        <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-        <option value="Lackó István">Lackó István</option>
-        <option value="Czifra Imre">Czifra Imre</option>
-        <option value="Takács József">Takács József</option>
-      </select>
-    </div>
+<!-- 🔐 Jelszavas védelem -->
+<script>
+  const pw = prompt("🔐 Raktáros jelszó:");
+  if (pw !== "raktar2024") {
+    alert("Hibás jelszó!");
+    window.location.href = "admin.html";
+  }
+</script>
 
-    <div class="form-group">
-      <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
-    </div>
+<div class="container">
+  <h2>Komissiózó Raktár</h2>
 
-    <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Komissiózó</th>
-          <th>Visszaig.szám</th>
-          <th>Bevitt ✅</th>
-          <th>Törlés</th>
-        </tr>
-      </thead>
-      <tbody id="table-body"></tbody>
-    </table>
+  <div class="form-group">
+    <label for="nev">Komissiózó</label>
+    <select id="nev">
+      <option value="">Válassz...</option>
+      <option>Molnár Attila</option>
+      <option>Kovács Szabolcs</option>
+      <option>Lackó István</option>
+      <option>Czifra Imre</option>
+      <option>Takács József</option>
+    </select>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, deleteDoc, doc,
-      onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  <div class="form-group">
+    <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+    <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+  </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
-      authDomain: "remenyikeresztur.firebaseapp.com",
-      projectId: "remenyikeresztur",
-      storageBucket: "remenyikeresztur.firebasestorage.app",
-      messagingSenderId: "981331750744",
-      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d",
-      measurementId: "G-CSQP9CS2QD"
-    };
+  <button class="add-btn" onclick="addItem()">Hozzáadás</button>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const colRef = collection(db, "komissiozas");
+  <table>
+    <thead>
+      <tr>
+        <th>Komissiózó</th>
+        <th>Visszaig.szám</th>
+        <th>Bevitt</th>
+        <th>Törlés</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
 
-    async function ensureTimestamps() {
-      const allDocs = await getDocs(colRef);
-      for (const d of allDocs.docs) {
-        if (!d.data().timestamp) {
-          await updateDoc(doc(db, "komissiozas", d.id), {
-            timestamp: serverTimestamp()
-          });
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, deleteDoc, doc,
+    onSnapshot, updateDoc, getDocs, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
+    authDomain: "remenyikeresztur.firebaseapp.com",
+    projectId: "remenyikeresztur",
+    storageBucket: "remenyikeresztur.firebasestorage.app",
+    messagingSenderId: "981331750744",
+    appId: "1:981331750744:web:d93439261f6c48a6c4bf2d",
+    measurementId: "G-CSQP9CS2QD"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const colRef = collection(db, "komissiozas");
+
+  const tableBody = document.getElementById("table-body");
+
+  onSnapshot(query(colRef, orderBy("datum")), (snapshot) => {
+    const today = new Date().toLocaleDateString("hu-HU"); // csak a mai napot mutatjuk
+    tableBody.innerHTML = "";
+
+    snapshot.forEach(docSnap => {
+      const d = docSnap.data();
+      if (!d.datum.startsWith(today)) return;
+
+      const row = tableBody.insertRow();
+      row.insertCell(0).textContent = d.nev;
+      row.insertCell(1).textContent = d.visszaigazolas;
+
+      const bevittCell = row.insertCell(2);
+      bevittCell.textContent = d.bevitt ? "✅" : "";
+
+      const delCell = row.insertCell(3);
+      const btn = document.createElement("button");
+      btn.textContent = "❌";
+      btn.onclick = () => {
+        if (confirm("Biztosan törlöd?")) {
+          deleteDoc(doc(db, "komissiozas", docSnap.id));
         }
-      }
+      };
+      delCell.appendChild(btn);
+    });
+  });
+
+  window.addItem = async () => {
+    const nev = document.getElementById("nev").value;
+    let visszaig = document.getElementById("visszaigazolas").value.trim();
+    if (!nev || !visszaig) return alert("Tölts ki minden mezőt!");
+    visszaig = visszaig.split(",").map(x => x.trim());
+
+    const snapshot = await getDocs(colRef);
+    const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+    const now = new Date().toLocaleString('hu-HU');
+
+    for (let szam of visszaig) {
+      if (existing.includes(szam)) continue;
+      await addDoc(colRef, {
+        datum: now,
+        nev,
+        visszaigazolas: szam,
+        bevitt: false
+      });
     }
 
-    onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
-      const tableBody = document.getElementById("table-body");
-      tableBody.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        const row = tableBody.insertRow();
+    document.getElementById("nev").value = "";
+    document.getElementById("visszaigazolas").value = "";
+  };
+</script>
 
-        row.insertCell(0).textContent = d.nev;
-        row.insertCell(1).textContent = d.visszaigazolas;
-
-        const checkCell = row.insertCell(2);
-        const check = document.createElement("span");
-        check.textContent = d.bevitt ? "✅" : "";
-        checkCell.appendChild(check);
-
-        const delCell = row.insertCell(3);
-        const btn = document.createElement("button");
-        btn.textContent = "❌";
-        btn.onclick = () => {
-          if (confirm("Biztosan törlöd?")) {
-            deleteDoc(doc(db, "komissiozas", docSnap.id));
-          }
-        };
-        delCell.appendChild(btn);
-      });
-    });
-
-    window.addItem = async () => {
-      const nev = document.getElementById("nev").value;
-      let vissza = document.getElementById("visszaigazolas").value.trim();
-
-      if (!nev || !vissza) {
-        alert("Kérlek tölts ki minden mezőt!");
-        return;
-      }
-
-      vissza = vissza.split(",").map(s => s.trim());
-      const snapshot = await getDocs(colRef);
-      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-      const now = new Date();
-      const formatted = now.toLocaleString("hu-HU");
-
-      for (let szam of vissza) {
-        if (existing.includes(szam)) continue;
-        await addDoc(colRef, {
-          datum: formatted,
-          nev,
-          visszaigazolas: szam,
-          bevitt: false,
-          timestamp: new Date()
-        });
-      }
-
-      document.getElementById("nev").value = "";
-      document.getElementById("visszaigazolas").value = "";
-    };
-
-    ensureTimestamps();
-  </script>
 </body>
 </html>
