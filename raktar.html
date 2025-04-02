@@ -31,11 +31,38 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header img.logo {
+      height: 50px;
+      margin-bottom: 10px;
+    }
+
+    .form-background {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .form-background img.bg {
+      position: absolute;
+      right: 10px;
+      top: -10px;
+      width: 140px;
+      opacity: 0.08;
+      pointer-events: none;
     }
 
     .form-group {
       display: flex;
       margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
     }
 
     .form-group label {
@@ -44,12 +71,14 @@
       line-height: 32px;
     }
 
-    .form-group select, .form-group input {
+    .form-group select,
+    .form-group input {
       flex: 1;
       padding: 8px;
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 6px;
+      background-color: rgba(255, 255, 255, 0.95);
     }
 
     .add-btn {
@@ -85,32 +114,31 @@
 <body>
   <div class="container">
     <div class="header">
-      <div style="text-align: center;">
-        <img src="remenyi.png" alt="Reményi Csomagolástechnika" style="height: 50px; margin-bottom: 10px;" />
-        <br />
-        <img src="image.png" alt="Targonca raklappal" style="height: 140px; margin-bottom: 20px;" />
-        <h2 style="margin: 0; font-size: 22px;">Raktáros felület</h2>
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" class="logo" />
+      <h2>Raktáros felület</h2>
+    </div>
+
+    <div class="form-background">
+      <img src="image.png" alt="Targonca háttér" class="bg" />
+      <div class="form-group">
+        <label for="nev">Komissiózó</label>
+        <select id="nev">
+          <option value="">Válassz...</option>
+          <option value="Molnár Attila">Molnár Attila</option>
+          <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+          <option value="Lackó István">Lackó István</option>
+          <option value="Czifra Imre">Czifra Imre</option>
+          <option value="Takács József">Takács József</option>
+        </select>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="nev">Komissiózó</label>
-      <select id="nev">
-        <option value="">Válassz...</option>
-        <option value="Molnár Attila">Molnár Attila</option>
-        <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-        <option value="Lackó István">Lackó István</option>
-        <option value="Czifra Imre">Czifra Imre</option>
-        <option value="Takács József">Takács József</option>
-      </select>
-    </div>
+      <div class="form-group">
+        <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+        <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+      </div>
 
-    <div class="form-group">
-      <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+      <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
     </div>
-
-    <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
 
     <table>
       <thead>
