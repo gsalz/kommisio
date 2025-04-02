@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Reményi Raktár</title>
 
-  <!-- 📱 PWA alap -->
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="raktar-manifest.json" />
   <link rel="icon" href="icon-193.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -162,19 +161,28 @@
     };
 
     const tableBody = document.getElementById("table-body");
+
+    function isToday(dateStr) {
+      const today = new Date();
+      const parsed = new Date(dateStr);
+      return parsed.toDateString() === today.toDateString();
+    }
+
     onSnapshot(query(colRef, orderBy("datum")), (snapshot) => {
       tableBody.innerHTML = "";
       const rows = [];
+
       snapshot.forEach(docSnap => {
-        rows.push({ id: docSnap.id, ...docSnap.data() });
+        const d = docSnap.data();
+        if (isToday(d.datum)) {
+          rows.push({ id: docSnap.id, ...d });
+        }
       });
 
-      // Új: dátum szerint növekvő sorrend
       rows.sort((a, b) => new Date(a.datum) - new Date(b.datum));
 
       rows.forEach(d => {
         const row = tableBody.insertRow();
-
         row.insertCell(0).textContent = d.datum;
         row.insertCell(1).textContent = d.nev;
         row.insertCell(2).textContent = d.visszaigazolas;
