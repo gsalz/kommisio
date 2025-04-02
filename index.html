@@ -130,11 +130,14 @@
   <script>
     const helyesJelszo = "remenyi1991";
     function jelszotKer() {
-      const beirt = prompt("Kérlek add meg a jelszót a belépéshez:");
+      if (sessionStorage.getItem("belepve") === "igen") return;
+
+      const beirt = prompt("🔐 Kérlek add meg a jelszót:");
       if (beirt !== helyesJelszo) {
         alert("⛔️ Hibás jelszó! Próbáld újra.");
         jelszotKer();
       } else {
+        sessionStorage.setItem("belepve", "igen");
         const uzi = document.createElement("div");
         uzi.textContent = "🔓 Sikeres belépés! Jó munkát, kitartást a napra!";
         Object.assign(uzi.style, {
@@ -156,7 +159,6 @@
     }
     window.addEventListener("load", jelszotKer);
   </script>
-
   <div class="container">
     <div class="header">
       <img src="remenyi.png" alt="Reményi Csomagolástechnika" />
@@ -198,7 +200,6 @@
       <tbody id="table-body"></tbody>
     </table>
   </div>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
@@ -212,8 +213,7 @@
       projectId: "remenyikeresztur",
       storageBucket: "remenyikeresztur.firebasestorage.app",
       messagingSenderId: "981331750744",
-      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d",
-      measurementId: "G-CSQP9CS2QD"
+      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -274,8 +274,9 @@
         check.type = "checkbox";
         check.checked = d.bevitt;
         check.onclick = () => {
-          const updated = { bevitt: check.checked };
-          updateDoc(doc(db, "komissiozas", docSnap.id), updated);
+          updateDoc(doc(db, "komissiozas", docSnap.id), {
+            bevitt: check.checked
+          });
         };
         checkCell.appendChild(check);
 
@@ -309,6 +310,7 @@
     window.importFromExcel = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         const data = new Uint8Array(e.target.result);
