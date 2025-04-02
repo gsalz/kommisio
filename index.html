@@ -127,6 +127,36 @@
 </head>
 
 <body>
+  <script>
+    const helyesJelszo = "remenyi1991";
+    function jelszotKer() {
+      const beirt = prompt("Kérlek add meg a jelszót a belépéshez:");
+      if (beirt !== helyesJelszo) {
+        alert("⛔️ Hibás jelszó! Próbáld újra.");
+        jelszotKer();
+      } else {
+        const uzi = document.createElement("div");
+        uzi.textContent = "🔓 Sikeres belépés! Jó munkát, kitartást a napra!";
+        Object.assign(uzi.style, {
+          position: "fixed",
+          top: "10px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#4caf50",
+          color: "#fff",
+          padding: "10px 20px",
+          borderRadius: "10px",
+          fontWeight: "bold",
+          zIndex: 9999,
+          boxShadow: "0 0 10px rgba(0,0,0,0.3)"
+        });
+        document.body.appendChild(uzi);
+        setTimeout(() => uzi.remove(), 4000);
+      }
+    }
+    window.addEventListener("load", jelszotKer);
+  </script>
+
   <div class="container">
     <div class="header">
       <img src="remenyi.png" alt="Reményi Csomagolástechnika" />
