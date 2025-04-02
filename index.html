@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ReményiKeresztúrKommissió</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
@@ -16,6 +15,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
+    :root {
+      --piros: #d32f2f;
+      --szurke: #f5f5f5;
+      --fekete: #212121;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #f9f9f9;
@@ -45,26 +50,21 @@
       height: 50px;
     }
 
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
     .export-btn {
       border: none;
-      padding: 8px 12px;
+      padding: 10px 16px;
       font-size: 14px;
-      background-color: #f58220;
+      background-color: var(--piros);
       color: white;
       border-radius: 6px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .export-btn img {
-      width: 16px;
-      margin-left: 6px;
-    }
-
-    .import-file {
-      font-size: 14px;
     }
 
     .form-group {
@@ -76,6 +76,7 @@
       width: 150px;
       font-size: 14px;
       line-height: 32px;
+      color: var(--fekete);
     }
 
     .form-group select,
@@ -85,6 +86,7 @@
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 6px;
+      background-color: var(--szurke);
     }
 
     .add-btn {
@@ -93,7 +95,7 @@
       font-size: 15px;
       border: none;
       border-radius: 6px;
-      background: #f58220;
+      background: var(--piros);
       color: white;
       cursor: pointer;
       margin-top: 10px;
@@ -113,7 +115,8 @@
     }
 
     th {
-      background: #f0f0f0;
+      background: var(--szurke);
+      color: var(--fekete);
     }
 
     input[type="checkbox"] {
@@ -127,8 +130,8 @@
   <div class="container">
     <div class="header">
       <img src="remenyi.png" alt="Reményi Csomagolástechnika" />
-      <div>
-        <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
+      <div class="actions">
+        <button class="export-btn" onclick="exportToCSV()">📤 Exportálás</button>
         <input type="file" class="import-file" accept=".xlsx" onchange="importFromExcel(event)" />
       </div>
     </div>
