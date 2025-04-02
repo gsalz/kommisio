@@ -144,11 +144,11 @@
       }
 
       const now = new Date();
-      const formatted = now.toLocaleString('hu-HU');
+      const iso = now.toISOString();
 
       for (let szam of visszaigazolasok) {
         await addDoc(colRef, {
-          datum: formatted,
+          datum: iso,
           nev,
           visszaigazolas: szam,
           bevitt: false,
@@ -162,10 +162,10 @@
 
     const tableBody = document.getElementById("table-body");
 
-    function isToday(dateStr) {
-      const today = new Date();
-      const parsed = new Date(dateStr);
-      return parsed.toDateString() === today.toDateString();
+    function isTodayISO(dateStr) {
+      const d = new Date(dateStr);
+      const now = new Date();
+      return d.toDateString() === now.toDateString();
     }
 
     onSnapshot(query(colRef, orderBy("datum")), (snapshot) => {
@@ -174,7 +174,7 @@
 
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
-        if (isToday(d.datum)) {
+        if (isTodayISO(d.datum)) {
           rows.push({ id: docSnap.id, ...d });
         }
       });
@@ -183,7 +183,8 @@
 
       rows.forEach(d => {
         const row = tableBody.insertRow();
-        row.insertCell(0).textContent = d.datum;
+        const dateObj = new Date(d.datum);
+        row.insertCell(0).textContent = dateObj.toLocaleString('hu-HU');
         row.insertCell(1).textContent = d.nev;
         row.insertCell(2).textContent = d.visszaigazolas;
 
