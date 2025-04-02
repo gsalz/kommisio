@@ -47,22 +47,28 @@
     .form-background {
       position: relative;
       margin-bottom: 20px;
+      min-height: 200px;
     }
 
     .form-background img.bg {
       position: absolute;
-      right: 10px;
-      top: -10px;
-      width: 140px;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
       opacity: 0.08;
       pointer-events: none;
+      z-index: 0;
+    }
+
+    .form-overlay {
+      position: relative;
+      z-index: 1;
     }
 
     .form-group {
       display: flex;
       margin-bottom: 10px;
-      position: relative;
-      z-index: 1;
     }
 
     .form-group label {
@@ -120,24 +126,26 @@
 
     <div class="form-background">
       <img src="image.png" alt="Targonca háttér" class="bg" />
-      <div class="form-group">
-        <label for="nev">Komissiózó</label>
-        <select id="nev">
-          <option value="">Válassz...</option>
-          <option value="Molnár Attila">Molnár Attila</option>
-          <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-          <option value="Lackó István">Lackó István</option>
-          <option value="Czifra Imre">Czifra Imre</option>
-          <option value="Takács József">Takács József</option>
-        </select>
-      </div>
+      <div class="form-overlay">
+        <div class="form-group">
+          <label for="nev">Komissiózó</label>
+          <select id="nev">
+            <option value="">Válassz...</option>
+            <option value="Molnár Attila">Molnár Attila</option>
+            <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+            <option value="Lackó István">Lackó István</option>
+            <option value="Czifra Imre">Czifra Imre</option>
+            <option value="Takács József">Takács József</option>
+          </select>
+        </div>
 
-      <div class="form-group">
-        <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-        <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
-      </div>
+        <div class="form-group">
+          <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+        </div>
 
-      <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
+        <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
+      </div>
     </div>
 
     <table>
