@@ -4,27 +4,70 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Reményi Raktár</title>
+
   <link rel="manifest" href="raktar-manifest.json" />
   <link rel="icon" href="icon-193.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="ReményiRaktár" />
+
   <style>
-    body { font-family: Arial; margin: 0; padding: 20px; background: #fff; display: flex; justify-content: center; }
-    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
+    body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; box-shadow: 2px 2px 6px rgba(0,0,0,0.1); position: relative; }
+
+    .logo {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 50px;
+    }
+
     .form-group { display: flex; margin-bottom: 10px; }
     .form-group label { width: 150px; }
-    .form-group input, .form-group select { flex: 1; padding: 8px; font-size: 14px; }
-    .add-btn { width: 100%; padding: 8px; font-size: 14px; margin-top: 10px; cursor: pointer; border: 1px solid #000; background: #f8f8f8; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
+    .form-group select, .form-group input {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    .add-btn {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #000;
+      background: #f8f8f8;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #000;
+      padding: 8px;
+      font-size: 14px;
+    }
+
     th { background: #f0f0f0; }
-    .delete-btn { background: none; border: none; color: red; font-size: 16px; cursor: pointer; }
+
+    .delete-btn {
+      cursor: pointer;
+      color: red;
+      font-size: 18px;
+      border: none;
+      background: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <img src="image.png" class="logo" alt="Béka ikon">
+
     <div class="form-group">
       <label for="nev">Komissiózó</label>
       <select id="nev">
@@ -36,11 +79,14 @@
         <option value="Takács József">Takács József</option>
       </select>
     </div>
+
     <div class="form-group">
       <label for="visszaigazolas">Visszaig.szám</label>
-      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678">
+      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
     </div>
+
     <button class="add-btn" onclick="addItem()">Hozzáadás</button>
+
     <table>
       <thead>
         <tr>
@@ -58,7 +104,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, orderBy
+      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, getDocs, query, orderBy
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -67,7 +113,8 @@
       projectId: "remenyikeresztur",
       storageBucket: "remenyikeresztur.firebasestorage.app",
       messagingSenderId: "981331750744",
-      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d"
+      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d",
+      measurementId: "G-CSQP9CS2QD"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -76,51 +123,74 @@
 
     window.addItem = async () => {
       const nev = document.getElementById("nev").value;
-      const visszaig = document.getElementById("visszaigazolas").value.trim();
-      if (!nev || !visszaig) {
-        alert("Tölts ki minden mezőt!");
+      let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
+
+      if (!nev || !visszaigazolasok) {
+        alert("Kérlek, töltsd ki mindkét mezőt!");
         return;
       }
 
-      const datum = new Date().toLocaleString('hu-HU');
-      await addDoc(colRef, {
-        datum,
-        nev,
-        visszaigazolas: visszaig,
-        bevitt: false,
-        bevittDatum: ""
-      });
+      visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
+      const snapshot = await getDocs(colRef);
+      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
+      if (duplikalt.length > 0) {
+        alert(`❗️ Ezek már szerepelnek: ${duplikalt.join(", ")}`);
+        return;
+      }
+
+      const now = new Date();
+      const formatted = now.toLocaleString('hu-HU');
+
+      for (let szam of visszaigazolasok) {
+        await addDoc(colRef, {
+          datum: formatted,
+          nev,
+          visszaigazolas: szam,
+          bevitt: false,
+          bevittDatum: ""
+        });
+      }
 
       document.getElementById("nev").value = "";
       document.getElementById("visszaigazolas").value = "";
     };
 
     const tableBody = document.getElementById("table-body");
-
     onSnapshot(query(colRef, orderBy("datum")), (snapshot) => {
       tableBody.innerHTML = "";
+      const rows = [];
       snapshot.forEach(docSnap => {
-        const d = docSnap.data();
+        rows.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      // Legyen időrendben, növekvő
+      rows.sort((a, b) => new Date(a.datum) - new Date(b.datum));
+
+      rows.forEach(d => {
         const row = tableBody.insertRow();
         row.insertCell(0).textContent = d.datum;
         row.insertCell(1).textContent = d.nev;
         row.insertCell(2).textContent = d.visszaigazolas;
 
+        const checkCell = row.insertCell(3);
         const check = document.createElement("input");
         check.type = "checkbox";
-        check.disabled = true;
         check.checked = d.bevitt;
-        row.insertCell(3).appendChild(check);
+        check.disabled = true;
+        checkCell.appendChild(check);
 
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "❌";
-        delBtn.className = "delete-btn";
-        delBtn.onclick = () => {
+        const delCell = row.insertCell(4);
+        const btn = document.createElement("button");
+        btn.textContent = "❌";
+        btn.className = "delete-btn";
+        btn.onclick = () => {
           if (confirm("Biztosan törlöd?")) {
-            deleteDoc(doc(db, "komissiozas", docSnap.id));
+            deleteDoc(doc(db, "komissiozas", d.id));
           }
         };
-        row.insertCell(4).appendChild(delBtn);
+        delCell.appendChild(btn);
       });
     });
   </script>
