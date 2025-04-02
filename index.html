@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ReményiKeresztúrKommissió</title>
 
-  <!-- 🧠 PWA támogatás -->
+  <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
@@ -14,27 +14,119 @@
   <meta name="apple-mobile-web-app-title" content="ReményiKeresztúrKommissió" />
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <style>
-    body { font-family: Arial; background: #fff; margin: 0; padding: 40px; display: flex; justify-content: center; }
-    .container { max-width: 900px; width: 100%; border: 1px solid #000; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .export-btn { border: 1px solid #000; padding: 6px 10px; font-size: 12px; cursor: pointer; display: flex; align-items: center; }
-    .export-btn img { width: 16px; margin-left: 5px; }
-    .form-group { display: flex; margin-bottom: 10px; }
-    .form-group label { width: 150px; }
-    .form-group select, .form-group input { flex: 1; padding: 8px; font-size: 14px; }
-    .add-btn { width: 100%; padding: 8px; border: 1px solid #000; font-size: 14px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #000; padding: 8px; font-size: 14px; }
-    th { background: #f0f0f0; }
-    .import-file { margin-top: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 40px 10px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .header img {
+      height: 50px;
+    }
+
+    .export-btn {
+      border: none;
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: #f58220;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .export-btn img {
+      width: 16px;
+      margin-left: 6px;
+    }
+
+    .import-file {
+      font-size: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      margin-bottom: 10px;
+    }
+
+    .form-group label {
+      width: 150px;
+      font-size: 14px;
+      line-height: 32px;
+    }
+
+    .form-group select,
+    .form-group input {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .add-btn {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border: none;
+      border-radius: 6px;
+      background: #f58220;
+      color: white;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
     <div class="header">
-      <img src="remenyi.png" alt="Reményi Csomagolástechnika" height="50" />
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" />
       <div>
         <button class="export-btn" onclick="exportToCSV()">Exportálás <img src="excel.png" /></button>
         <input type="file" class="import-file" accept=".xlsx" onchange="importFromExcel(event)" />
@@ -58,7 +150,7 @@
       <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
     </div>
 
-    <button class="add-btn" onclick="addItem()">Hozzáadás</button>
+    <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
 
     <table>
       <thead>
@@ -77,7 +169,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy, Timestamp
+      getFirestore, collection, addDoc, deleteDoc, doc,
+      onSnapshot, updateDoc, getDocs, query, orderBy, Timestamp
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
