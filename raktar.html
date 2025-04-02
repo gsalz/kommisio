@@ -107,7 +107,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, getDocs, query, orderBy
+      getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc,
+      query, orderBy, Timestamp
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -134,21 +135,14 @@
       }
 
       visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
-      const snapshot = await getDocs(colRef);
-      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-
-      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
-      if (duplikalt.length > 0) {
-        alert(`❗️ Ezek a visszaigazolások már szerepelnek: ${duplikalt.join(", ")}`);
-        return;
-      }
-
       const now = new Date();
-      const iso = now.toISOString();
+      const isoDatum = now.toISOString();
+      const timestamp = Timestamp.fromDate(now);
 
       for (let szam of visszaigazolasok) {
         await addDoc(colRef, {
-          datum: iso,
+          datum: isoDatum,
+          datumTimestamp: timestamp,
           nev,
           visszaigazolas: szam,
           bevitt: false,
@@ -162,29 +156,25 @@
 
     const tableBody = document.getElementById("table-body");
 
-    function isTodayISO(dateStr) {
-      const d = new Date(dateStr);
-      const now = new Date();
-      return d.toDateString() === now.toDateString();
-    }
-
-    onSnapshot(query(colRef, orderBy("datum")), (snapshot) => {
+    onSnapshot(query(colRef, orderBy("datumTimestamp")), (snapshot) => {
       tableBody.innerHTML = "";
       const rows = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
-        if (isTodayISO(d.datum)) {
+        const t = d.datumTimestamp?.toDate?.();
+        if (t && t >= today && t < tomorrow) {
           rows.push({ id: docSnap.id, ...d });
         }
       });
 
-      rows.sort((a, b) => new Date(a.datum) - new Date(b.datum));
-
       rows.forEach(d => {
         const row = tableBody.insertRow();
-        const dateObj = new Date(d.datum);
-        row.insertCell(0).textContent = dateObj.toLocaleString('hu-HU');
+        row.insertCell(0).textContent = d.datum;
         row.insertCell(1).textContent = d.nev;
         row.insertCell(2).textContent = d.visszaigazolas;
 
