@@ -115,6 +115,12 @@
     th {
       background: #f0f0f0;
     }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -259,9 +265,49 @@
 
       document.getElementById("nev").value = "";
       document.getElementById("visszaigazolas").value = "";
+
+      mutassDicseretet(); // 🎉 dicséret felugrik!
     };
 
     ensureTimestamps();
+  </script>
+
+  <script>
+    const dicseretek = [
+      "🟢 Remek munka, igazi profizmus!",
+      "🎯 Tökéletesen pontos komissiózás!",
+      "👏 Nagyot mentél most is!",
+      "🚛 Te vagy a raktár lelke!",
+      "💼 Precíz, mint mindig!",
+      "🔝 Minden főnök ilyen munkatársat akar!",
+      "📦 Úgy pakolsz, mint egy logisztikai ninja!",
+      "⚡️ Gyors és pontos – ez a te védjegyed!",
+      "💪 Erő és ész együtt – gratulálunk!",
+      "⭐️ Tőled indul jól a nap!"
+    ];
+
+    function mutassDicseretet() {
+      const uzenet = dicseretek[Math.floor(Math.random() * dicseretek.length)];
+      const popup = document.createElement("div");
+      popup.textContent = uzenet;
+      Object.assign(popup.style, {
+        position: "fixed",
+        top: "40%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        background: "#d32f2f",
+        color: "white",
+        padding: "20px 30px",
+        borderRadius: "12px",
+        fontSize: "20px",
+        fontWeight: "bold",
+        zIndex: 9999,
+        boxShadow: "0 0 20px rgba(0,0,0,0.3)",
+        animation: "fadeOut 3s forwards"
+      });
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 3000);
+    }
   </script>
 
   <script>
