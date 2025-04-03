@@ -348,15 +348,24 @@
       reader.readAsArrayBuffer(file);
     };
 
-    // 🔔 10 percenkénti ellenőrzés + figyelmeztetés
+    // 🔔 10 percenkénti ellenőrzés + vizuális és badge jelzés
     async function ellenorizBevitetleneket() {
       const snapshot = await getDocs(colRef);
       const vanNemBevitt = snapshot.docs.some(doc => doc.data().bevitt === false);
       const jelzes = document.getElementById("figyelmeztetes-jel");
       jelzes.style.display = vanNemBevitt ? "inline-block" : "none";
+
+      // Badge API: jelzés az ikonon
+      if ('setAppBadge' in navigator) {
+        if (vanNemBevitt) {
+          navigator.setAppBadge(1);
+        } else {
+          navigator.clearAppBadge();
+        }
+      }
     }
 
-    setInterval(ellenorizBevitetleneket, 600000); // 10 perc
+    setInterval(ellenorizBevitetleneket, 600000); // 10 percenként
     window.addEventListener("load", ellenorizBevitetleneket);
   </script>
 </body>
