@@ -50,6 +50,17 @@
       height: 50px;
     }
 
+    .jelzes {
+      display: none;
+      background: red;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 10px;
+      margin-left: 10px;
+    }
+
     .actions {
       display: flex;
       flex-direction: column;
@@ -162,6 +173,7 @@
   <div class="container">
     <div class="header">
       <img src="remenyi.png" alt="Reményi Csomagolástechnika" />
+      <span id="figyelmeztetes-jel" class="jelzes">⚠️ Nem bevitt adat!</span>
       <div class="actions">
         <button class="export-btn" onclick="exportToCSV()">📤 Exportálás</button>
         <input type="file" class="import-file" accept=".xlsx" onchange="importFromExcel(event)" />
@@ -200,6 +212,7 @@
       <tbody id="table-body"></tbody>
     </table>
   </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
@@ -219,41 +232,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const colRef = collection(db, "komissiozas");
-
-    window.addItem = async () => {
-      const nev = document.getElementById("nev").value;
-      let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
-
-      if (!nev || !visszaigazolasok) {
-        alert("Kérlek, töltsd ki mindkét mezőt!");
-        return;
-      }
-
-      visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
-      const snapshot = await getDocs(colRef);
-      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-
-      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
-      if (duplikalt.length > 0) {
-        alert(`❗️ Ezek a visszaigazolások már szerepelnek: ${duplikalt.join(", ")}`);
-        return;
-      }
-
-      const now = new Date();
-      const timestamp = Timestamp.fromDate(now);
-
-      for (let szam of visszaigazolasok) {
-        await addDoc(colRef, {
-          timestamp,
-          nev,
-          visszaigazolas: szam,
-          bevitt: false
-        });
-      }
-
-      document.getElementById("nev").value = "";
-      document.getElementById("visszaigazolas").value = "";
-    };
 
     const tableBody = document.getElementById("table-body");
 
@@ -292,6 +270,41 @@
       });
     });
 
+    window.addItem = async () => {
+      const nev = document.getElementById("nev").value;
+      let visszaigazolasok = document.getElementById("visszaigazolas").value.trim();
+
+      if (!nev || !visszaigazolasok) {
+        alert("Kérlek, töltsd ki mindkét mezőt!");
+        return;
+      }
+
+      visszaigazolasok = visszaigazolasok.split(",").map(n => n.trim());
+      const snapshot = await getDocs(colRef);
+      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+      const duplikalt = visszaigazolasok.filter(szam => existing.includes(szam));
+      if (duplikalt.length > 0) {
+        alert(`❗️ Ezek a visszaigazolások már szerepelnek: ${duplikalt.join(", ")}`);
+        return;
+      }
+
+      const now = new Date();
+      const timestamp = Timestamp.fromDate(now);
+
+      for (let szam of visszaigazolasok) {
+        await addDoc(colRef, {
+          timestamp,
+          nev,
+          visszaigazolas: szam,
+          bevitt: false
+        });
+      }
+
+      document.getElementById("nev").value = "";
+      document.getElementById("visszaigazolas").value = "";
+    };
+
     window.exportToCSV = async () => {
       const snapshot = await getDocs(colRef);
       let csv = "\uFEFFDátum;Komissiózó;Visszaig.szám;Bevitt\n";
@@ -310,24 +323,19 @@
     window.importFromExcel = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = async (e) => {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
-
         const snapshot = await getDocs(colRef);
         const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-
         for (let row of json) {
           if (existing.includes(row.visszaigazolas)) continue;
           if (!row.datum || !row.nev || !row.visszaigazolas) continue;
-
           const datum = new Date(row.datum);
           const timestamp = Timestamp.fromDate(datum);
-
           await addDoc(colRef, {
             timestamp,
             nev: row.nev,
@@ -335,11 +343,21 @@
             bevitt: false
           });
         }
-
         alert("✅ Importálás kész!");
       };
       reader.readAsArrayBuffer(file);
     };
+
+    // 🔔 10 percenkénti ellenőrzés + figyelmeztetés
+    async function ellenorizBevitetleneket() {
+      const snapshot = await getDocs(colRef);
+      const vanNemBevitt = snapshot.docs.some(doc => doc.data().bevitt === false);
+      const jelzes = document.getElementById("figyelmeztetes-jel");
+      jelzes.style.display = vanNemBevitt ? "inline-block" : "none";
+    }
+
+    setInterval(ellenorizBevitetleneket, 600000); // 10 perc
+    window.addEventListener("load", ellenorizBevitetleneket);
   </script>
 </body>
 </html>
