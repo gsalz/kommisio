@@ -21,7 +21,6 @@
       display: flex;
       justify-content: center;
     }
-
     .container {
       max-width: 900px;
       width: 100%;
@@ -31,26 +30,44 @@
       border-radius: 12px;
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
-
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header img.logo {
+      height: 50px;
+      margin-bottom: 10px;
+    }
     .form-row {
       display: flex;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 20px;
       margin-bottom: 20px;
       flex-wrap: wrap;
     }
-
+    .form-image {
+      max-width: 160px;
+    }
+    .form-image img {
+      width: 100%;
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+    }
+    .form-fields {
+      flex: 1;
+      min-width: 280px;
+    }
     .form-group {
       display: flex;
       margin-bottom: 10px;
     }
-
     .form-group label {
       width: 150px;
       font-size: 14px;
       line-height: 32px;
     }
-
     .form-group select,
     .form-group input {
       flex: 1;
@@ -59,7 +76,6 @@
       border: 1px solid #ccc;
       border-radius: 6px;
     }
-
     .add-btn {
       width: 100%;
       padding: 10px;
@@ -71,24 +87,20 @@
       cursor: pointer;
       margin-top: 10px;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
     }
-
     th, td {
       border: 1px solid #ddd;
       padding: 8px;
       font-size: 14px;
       text-align: left;
     }
-
     th {
       background: #f0f0f0;
     }
-
     @keyframes fadeOut {
       0% { opacity: 1; }
       70% { opacity: 1; }
@@ -97,9 +109,42 @@
   </style>
 </head>
 <body>
+  <script>
+    const helyesJelszo = "remenyi1991";
+    function jelszotKer() {
+      if (sessionStorage.getItem("belepve") === "igen") return;
+      const beirt = prompt("🔐 Kérlek add meg a jelszót:");
+      if (beirt !== helyesJelszo) {
+        alert("⛔️ Hibás jelszó! Próbáld újra.");
+        jelszotKer();
+      } else {
+        sessionStorage.setItem("belepve", "igen");
+        const uzi = document.createElement("div");
+        uzi.textContent = "🔓 Sikeres belépés! Jó munkát, kitartást a napra!";
+        Object.assign(uzi.style, {
+          position: "fixed", top: "10px", left: "50%",
+          transform: "translateX(-50%)",
+          background: "#4caf50", color: "#fff", padding: "10px 20px",
+          borderRadius: "10px", fontWeight: "bold", zIndex: 9999,
+          boxShadow: "0 0 10px rgba(0,0,0,0.3)"
+        });
+        document.body.appendChild(uzi);
+        setTimeout(() => uzi.remove(), 4000);
+      }
+    }
+    window.addEventListener("load", jelszotKer);
+  </script>
+
   <div class="container">
-    <h2>Raktáros felület</h2>
+    <div class="header">
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" class="logo" />
+      <h2>Raktáros felület</h2>
+    </div>
+
     <div class="form-row">
+      <div class="form-image">
+        <img src="image.png" alt="Targonca illusztráció" />
+      </div>
       <div class="form-fields">
         <div class="form-group">
           <label for="nev">Komissiózó</label>
@@ -114,7 +159,7 @@
         </div>
         <div class="form-group">
           <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" autofocus />
+          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
         </div>
         <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
       </div>
@@ -132,12 +177,11 @@
       <tbody id="table-body"></tbody>
     </table>
   </div>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
       getFirestore, collection, addDoc, deleteDoc, doc,
-      onSnapshot, updateDoc, getDocs, query, orderBy
+      onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -153,30 +197,50 @@
     const db = getFirestore(app);
     const colRef = collection(db, "komissiozas");
 
+    async function ensureTimestamps() {
+      const allDocs = await getDocs(colRef);
+      for (const d of allDocs.docs) {
+        if (!d.data().timestamp) {
+          await updateDoc(doc(db, "komissiozas", d.id), {
+            timestamp: serverTimestamp()
+          });
+        }
+      }
+    }
+
     onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
       const tableBody = document.getElementById("table-body");
       tableBody.innerHTML = "";
 
-      const today = new Date(); today.setHours(0,0,0,0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       snapshot.forEach(docSnap => {
         const d = docSnap.data();
         if (!d.timestamp) return;
 
         const docDate = new Date(d.timestamp.toDate ? d.timestamp.toDate() : d.timestamp);
-        docDate.setHours(0,0,0,0);
+        docDate.setHours(0, 0, 0, 0);
 
         if (docDate.getTime() !== today.getTime()) return;
 
         const row = tableBody.insertRow();
         row.insertCell(0).textContent = d.nev;
         row.insertCell(1).textContent = d.visszaigazolas;
-        row.insertCell(2).textContent = d.bevitt ? "✅" : "";
+
+        const checkCell = row.insertCell(2);
+        const check = document.createElement("span");
+        check.textContent = d.bevitt ? "✅" : "";
+        checkCell.appendChild(check);
 
         const delCell = row.insertCell(3);
         const btn = document.createElement("button");
         btn.textContent = "❌";
-        btn.onclick = () => deleteDoc(doc(db, "komissiozas", docSnap.id));
+        btn.onclick = () => {
+          if (confirm("Biztosan törlöd?")) {
+            deleteDoc(doc(db, "komissiozas", docSnap.id));
+          }
+        };
         delCell.appendChild(btn);
       });
     });
@@ -184,16 +248,52 @@
     window.addItem = async () => {
       const nev = document.getElementById("nev").value;
       let vissza = document.getElementById("visszaigazolas").value.trim();
-      if (!nev || !vissza) return alert("Kérlek tölts ki minden mezőt!");
+
+      if (!nev || !vissza) {
+        alert("Kérlek tölts ki minden mezőt!");
+        return;
+      }
+
+      vissza = vissza.split(",").map(s => s.trim());
       const snapshot = await getDocs(colRef);
       const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-      if (existing.includes(vissza)) return alert("⚠️ Ez a visszaigazolás már szerepel!");
-      await addDoc(colRef, { nev, visszaigazolas: vissza, bevitt: false, timestamp: new Date() });
+
+      const mostFelvitt = [];
+      const marLetezo = [];
+
+      const now = new Date();
+      const formatted = now.toLocaleString("hu-HU");
+
+      for (let szam of vissza) {
+        if (existing.includes(szam)) {
+          marLetezo.push(szam);
+          continue;
+        }
+        await addDoc(colRef, {
+          datum: formatted,
+          nev,
+          visszaigazolas: szam,
+          bevitt: false,
+          timestamp: new Date()
+        });
+        mostFelvitt.push(szam);
+      }
+
       document.getElementById("nev").value = "";
       document.getElementById("visszaigazolas").value = "";
-      mutassDicseretet();
+
+      if (mostFelvitt.length > 0) {
+        mutassDicseretet();
+      }
+
+      if (marLetezo.length > 0) {
+        alert("⚠️ Ezek a visszaigazolások már léteznek és nem kerültek újra mentésre:\n" + marLetezo.join(", "));
+      }
     };
+
+    ensureTimestamps();
   </script>
+
   <script>
     const dicseretek = [
       "🟢 Remek munka, igazi profizmus!",
@@ -233,12 +333,6 @@
   </script>
 
   <script>
-    document.getElementById("visszaigazolas").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        addItem(); // automatikus mentés
-      }
-    });
-
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('raktar-service-worker.js')
@@ -246,10 +340,6 @@
           .catch(err => console.error('❌ Service Worker hiba:', err));
       });
     }
-
-    window.addEventListener("load", () => {
-      document.getElementById("visszaigazolas").focus();
-    });
   </script>
 </body>
 </html>
