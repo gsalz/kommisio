@@ -4,12 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Raktáros – ReményiKeresztúrKommissió</title>
+
   <link rel="manifest" href="raktar-manifest.json" />
   <link rel="icon" href="icon-192.png" type="image/png" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Reményi Raktáros" />
+
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
@@ -38,6 +40,27 @@
       height: 50px;
       margin-bottom: 10px;
     }
+    .form-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .form-image {
+      max-width: 160px;
+    }
+    .form-image img {
+      width: 100%;
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+    }
+    .form-fields {
+      flex: 1;
+      min-width: 280px;
+    }
     .form-group {
       display: flex;
       margin-bottom: 10px;
@@ -47,14 +70,15 @@
       font-size: 14px;
       line-height: 32px;
     }
-    .form-group select, .form-group input {
+    .form-group select,
+    .form-group input {
       flex: 1;
       padding: 8px;
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 6px;
     }
-    .add-btn, .scan-btn, .search-btn {
+    .add-btn, .search-btn {
       width: 100%;
       padding: 10px;
       font-size: 15px;
@@ -67,13 +91,8 @@
     }
     #reader {
       width: 100%;
-      margin: 20px 0;
+      margin: 20px auto;
       display: none;
-    }
-    #scanner-controls {
-      display: none;
-      margin-bottom: 10px;
-      text-align: right;
     }
     table {
       width: 100%;
@@ -96,7 +115,6 @@
     }
   </style>
 </head>
-
 <body>
   <script>
     const helyesJelszo = "remenyi1991";
@@ -130,25 +148,30 @@
       <h2>Raktáros felület</h2>
     </div>
 
-    <div class="form-group">
-      <label for="nev">Komissiózó</label>
-      <select id="nev">
-        <option value="">Válassz...</option>
-        <option value="Molnár Attila">Molnár Attila</option>
-        <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-        <option value="Lackó István">Lackó István</option>
-        <option value="Czifra Imre">Czifra Imre</option>
-        <option value="Takács József">Takács József</option>
-      </select>
+    <div class="form-row">
+      <div class="form-image">
+        <img src="image.png" alt="Targonca illusztráció" />
+      </div>
+      <div class="form-fields">
+        <div class="form-group">
+          <label for="nev">Komissiózó</label>
+          <select id="nev">
+            <option value="">Válassz...</option>
+            <option value="Molnár Attila">Molnár Attila</option>
+            <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+            <option value="Lackó István">Lackó István</option>
+            <option value="Czifra Imre">Czifra Imre</option>
+            <option value="Takács József">Takács József</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+        </div>
+        <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
+        <button class="search-btn" onclick="scanBarcode()">🔍 Keresés most</button>
+      </div>
     </div>
-
-    <div class="form-group">
-      <label for="visszaigazolas">Visszaig.szám</label>
-      <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
-    </div>
-
-    <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
-    <button class="search-btn" onclick="egyOlvasas()">🔎 Keresés most</button>
 
     <div id="reader"></div>
     <table>
@@ -168,7 +191,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
       getFirestore, collection, addDoc, deleteDoc, doc,
-      onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
+      onSnapshot, updateDoc, getDocs, query, orderBy
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -203,11 +226,7 @@
         const row = tableBody.insertRow();
         row.insertCell(0).textContent = d.nev;
         row.insertCell(1).textContent = d.visszaigazolas;
-
-        const checkCell = row.insertCell(2);
-        const check = document.createElement("span");
-        check.textContent = d.bevitt ? "✅" : "";
-        checkCell.appendChild(check);
+        row.insertCell(2).textContent = d.bevitt ? "✅" : "";
 
         const delCell = row.insertCell(3);
         const btn = document.createElement("button");
@@ -230,128 +249,84 @@
         return;
       }
 
-      vissza = vissza.split(",").map(s => s.trim());
       const snapshot = await getDocs(colRef);
       const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
 
-      const mostFelvitt = [];
-      const marLetezo = [];
-
-      const now = new Date();
-      const formatted = now.toLocaleString("hu-HU");
-
-      for (let szam of vissza) {
-        if (existing.includes(szam)) {
-          marLetezo.push(szam);
-          continue;
-        }
-        await addDoc(colRef, {
-          datum: formatted,
-          nev,
-          visszaigazolas: szam,
-          bevitt: false,
-          timestamp: new Date()
-        });
-        mostFelvitt.push(szam);
+      if (existing.includes(vissza)) {
+        alert("❗️ Ez a visszaigazolás már szerepel!");
+        return;
       }
+
+      await addDoc(colRef, {
+        nev,
+        visszaigazolas: vissza,
+        bevitt: false,
+        timestamp: new Date()
+      });
 
       document.getElementById("nev").value = "";
       document.getElementById("visszaigazolas").value = "";
-
-      if (mostFelvitt.length > 0) {
-        mutassDicseretet();
-      }
-
-      if (marLetezo.length > 0) {
-        alert("⚠️ Ezek a visszaigazolások már léteznek:\n" + marLetezo.join(", "));
-      }
     };
   </script>
-
   <script>
-    const dicseretek = [
-      "🟢 Remek munka, igazi profizmus!",
-      "🎯 Tökéletesen pontos komissiózás!",
-      "👏 Nagyot mentél most is!",
-      "🚛 Te vagy a raktár lelke!",
-      "💼 Precíz, mint mindig!",
-      "🔝 Minden főnök ilyen munkatársat akar!",
-      "📦 Úgy pakolsz, mint egy logisztikai ninja!",
-      "⚡️ Gyors és pontos – ez a te védjegyed!",
-      "💪 Erő és ész együtt – gratulálunk!",
-      "⭐️ Tőled indul jól a nap!"
-    ];
+    function scanBarcode() {
+      const readerDiv = document.getElementById("reader");
+      readerDiv.style.display = "block";
+      const html5QrCode = new Html5Qrcode("reader");
 
-    function mutassDicseretet() {
-      const uzenet = dicseretek[Math.floor(Math.random() * dicseretek.length)];
-      const popup = document.createElement("div");
-      popup.textContent = uzenet;
-      Object.assign(popup.style, {
-        position: "fixed",
-        top: "40%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        background: "#d32f2f",
-        color: "white",
-        padding: "20px 30px",
-        borderRadius: "12px",
-        fontSize: "20px",
-        fontWeight: "bold",
-        zIndex: 9999,
-        boxShadow: "0 0 20px rgba(0,0,0,0.3)",
-        animation: "fadeOut 3s forwards"
-      });
-      document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 3000);
-    }
-  </script>
-<script>
-  function egyOlvasas() {
-    const readerDiv = document.getElementById("reader");
-    const input = document.getElementById("visszaigazolas");
-    readerDiv.style.display = "block";
-    const html5QrCode = new Html5Qrcode("reader");
-
-    html5QrCode.start(
-      { facingMode: "environment" },
-      {
+      const config = {
         fps: 10,
-        qrbox: { width: 300, height: 100 },
-        aspectRatio: 2.0,
-        disableFlip: true
-      },
-      (decodedText) => {
-        input.value = decodedText;
+        qrbox: 250,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.AZTEC,
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
+          Html5QrcodeSupportedFormats.PDF_417
+        ]
+      };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          document.getElementById("visszaigazolas").value = decodedText;
+          html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            readerDiv.style.display = "none";
+          });
+        },
+        (error) => {
+          // nem baj, ha nincs olvasás
+        }
+      );
+
+      setTimeout(() => {
         html5QrCode.stop().then(() => {
           html5QrCode.clear();
           readerDiv.style.display = "none";
+          if (!document.getElementById("visszaigazolas").value) {
+            alert("❌ Nem talált vonalkódot!");
+          }
         });
-      },
-      (err) => {}
-    );
+      }, 15000); // ⏱️ 15 mp olvasási idő
+    }
+  </script>
 
-    // Automatikusan leáll 5 másodperc után, ha nincs olvasás
-    setTimeout(() => {
-      html5QrCode.stop().then(() => {
-        html5QrCode.clear();
-        readerDiv.style.display = "none";
-        if (!input.value) {
-          alert("❌ Nem talált vonalkódot!");
-        }
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('raktar-service-worker.js')
+          .then(reg => console.log('✅ Service Worker regisztrálva:', reg.scope))
+          .catch(err => console.error('❌ Service Worker hiba:', err));
       });
-    }, 50000);
-  }
-</script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('raktar-service-worker.js')
-        .then(reg => console.log('✅ Service Worker regisztrálva:', reg.scope))
-        .catch(err => console.error('❌ Service Worker hiba:', err));
-    });
-  }
-</script>
-
+    }
+  </script>
 </body>
 </html>
