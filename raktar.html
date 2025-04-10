@@ -12,6 +12,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Reményi Raktáros" />
 
+  <!-- Vonalkód könyvtár -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -87,6 +90,10 @@
       cursor: pointer;
       margin-top: 10px;
     }
+    #reader {
+      margin-top: 10px;
+      display: none;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -134,212 +141,215 @@
     }
     window.addEventListener("load", jelszotKer);
   </script>
-
-  <div class="container">
-    <div class="header">
-      <img src="remenyi.png" alt="Reményi Csomagolástechnika" class="logo" />
-      <h2>Raktáros felület</h2>
-    </div>
-
-    <div class="form-row">
-      <div class="form-image">
-        <img src="image.png" alt="Targonca illusztráció" />
-      </div>
-      <div class="form-fields">
-        <div class="form-group">
-          <label for="nev">Komissiózó</label>
-          <select id="nev">
-            <option value="">Válassz...</option>
-            <option value="Molnár Attila">Molnár Attila</option>
-            <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-            <option value="Lackó István">Lackó István</option>
-            <option value="Czifra Imre">Czifra Imre</option>
-            <option value="Takács József">Takács József</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
-        </div>
-        <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Komissiózó</th>
-          <th>Visszaig.szám</th>
-          <th>Bevitt ✅</th>
-          <th>Törlés</th>
-        </tr>
-      </thead>
-      <tbody id="table-body"></tbody>
-    </table>
+<div class="container">
+  <div class="header">
+    <img src="remenyi.png" alt="Reményi Csomagolástechnika" class="logo" />
+    <h2>Raktáros felület</h2>
   </div>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, deleteDoc, doc,
-      onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
-      authDomain: "remenyikeresztur.firebaseapp.com",
-      projectId: "remenyikeresztur",
-      storageBucket: "remenyikeresztur.firebasestorage.app",
-      messagingSenderId: "981331750744",
-      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d"
-    };
+  <div class="form-row">
+    <div class="form-image">
+      <img src="image.png" alt="Targonca illusztráció" />
+    </div>
+    <div class="form-fields">
+      <div class="form-group">
+        <label for="nev">Komissiózó</label>
+        <select id="nev">
+          <option value="">Válassz...</option>
+          <option value="Molnár Attila">Molnár Attila</option>
+          <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+          <option value="Lackó István">Lackó István</option>
+          <option value="Czifra Imre">Czifra Imre</option>
+          <option value="Takács József">Takács József</option>
+        </select>
+      </div>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const colRef = collection(db, "komissiozas");
+      <div class="form-group">
+        <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+        <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+      </div>
 
-    async function ensureTimestamps() {
-      const allDocs = await getDocs(colRef);
-      for (const d of allDocs.docs) {
-        if (!d.data().timestamp) {
-          await updateDoc(doc(db, "komissiozas", d.id), {
-            timestamp: serverTimestamp()
-          });
+      <button class="add-btn" onclick="startScanner()">📷 Vonalkód olvasás</button>
+      <div id="reader"></div>
+
+      <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Komissiózó</th>
+        <th>Visszaig.szám</th>
+        <th>Bevitt ✅</th>
+        <th>Törlés</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, deleteDoc, doc,
+    onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
+    authDomain: "remenyikeresztur.firebaseapp.com",
+    projectId: "remenyikeresztur",
+    storageBucket: "remenyikeresztur.firebasestorage.app",
+    messagingSenderId: "981331750744",
+    appId: "1:981331750744:web:d93439261f6c48a6c4bf2d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const colRef = collection(db, "komissiozas");
+
+  onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
+    const tableBody = document.getElementById("table-body");
+    tableBody.innerHTML = "";
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    snapshot.forEach(docSnap => {
+      const d = docSnap.data();
+      if (!d.timestamp) return;
+
+      const docDate = new Date(d.timestamp.toDate ? d.timestamp.toDate() : d.timestamp);
+      docDate.setHours(0, 0, 0, 0);
+      if (docDate.getTime() !== today.getTime()) return;
+
+      const row = tableBody.insertRow();
+      row.insertCell(0).textContent = d.nev;
+      row.insertCell(1).textContent = d.visszaigazolas;
+
+      const checkCell = row.insertCell(2);
+      const check = document.createElement("span");
+      check.textContent = d.bevitt ? "✅" : "";
+      checkCell.appendChild(check);
+
+      const delCell = row.insertCell(3);
+      const btn = document.createElement("button");
+      btn.textContent = "❌";
+      btn.onclick = () => {
+        if (confirm("Biztosan törlöd?")) {
+          deleteDoc(doc(db, "komissiozas", docSnap.id));
         }
-      }
-    }
-
-    onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
-      const tableBody = document.getElementById("table-body");
-      tableBody.innerHTML = "";
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        if (!d.timestamp) return;
-
-        const docDate = new Date(d.timestamp.toDate ? d.timestamp.toDate() : d.timestamp);
-        docDate.setHours(0, 0, 0, 0);
-
-        if (docDate.getTime() !== today.getTime()) return;
-
-        const row = tableBody.insertRow();
-        row.insertCell(0).textContent = d.nev;
-        row.insertCell(1).textContent = d.visszaigazolas;
-
-        const checkCell = row.insertCell(2);
-        const check = document.createElement("span");
-        check.textContent = d.bevitt ? "✅" : "";
-        checkCell.appendChild(check);
-
-        const delCell = row.insertCell(3);
-        const btn = document.createElement("button");
-        btn.textContent = "❌";
-        btn.onclick = () => {
-          if (confirm("Biztosan törlöd?")) {
-            deleteDoc(doc(db, "komissiozas", docSnap.id));
-          }
-        };
-        delCell.appendChild(btn);
-      });
+      };
+      delCell.appendChild(btn);
     });
+  });
 
-    window.addItem = async () => {
-      const nev = document.getElementById("nev").value;
-      let vissza = document.getElementById("visszaigazolas").value.trim();
+  const dicseretek = [
+    "🟢 Remek munka, igazi profizmus!",
+    "🎯 Tökéletesen pontos komissiózás!",
+    "👏 Nagyot mentél most is!",
+    "🚛 Te vagy a raktár lelke!",
+    "💼 Precíz, mint mindig!",
+    "🔝 Minden főnök ilyen munkatársat akar!",
+    "📦 Úgy pakolsz, mint egy logisztikai ninja!",
+    "⚡️ Gyors és pontos – ez a te védjegyed!",
+    "💪 Erő és ész együtt – gratulálunk!",
+    "⭐️ Tőled indul jól a nap!"
+  ];
 
-      if (!nev || !vissza) {
-        alert("Kérlek tölts ki minden mezőt!");
-        return;
-      }
+  function mutassDicseretet() {
+    const uzenet = dicseretek[Math.floor(Math.random() * dicseretek.length)];
+    const popup = document.createElement("div");
+    popup.textContent = uzenet;
+    Object.assign(popup.style, {
+      position: "fixed",
+      top: "40%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      background: "#d32f2f",
+      color: "white",
+      padding: "20px 30px",
+      borderRadius: "12px",
+      fontSize: "20px",
+      fontWeight: "bold",
+      zIndex: 9999,
+      boxShadow: "0 0 20px rgba(0,0,0,0.3)",
+      animation: "fadeOut 3s forwards"
+    });
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 3000);
+  }
 
-      vissza = vissza.split(",").map(s => s.trim());
-      const snapshot = await getDocs(colRef);
-      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+  window.addItem = async () => {
+    const nev = document.getElementById("nev").value;
+    let vissza = document.getElementById("visszaigazolas").value.trim();
 
-      const mostFelvitt = [];
-      const marLetezo = [];
-
-      const now = new Date();
-      const formatted = now.toLocaleString("hu-HU");
-
-      for (let szam of vissza) {
-        if (existing.includes(szam)) {
-          marLetezo.push(szam);
-          continue;
-        }
-        await addDoc(colRef, {
-          datum: formatted,
-          nev,
-          visszaigazolas: szam,
-          bevitt: false,
-          timestamp: new Date()
-        });
-        mostFelvitt.push(szam);
-      }
-
-      document.getElementById("nev").value = "";
-      document.getElementById("visszaigazolas").value = "";
-
-      if (mostFelvitt.length > 0) {
-        mutassDicseretet();
-      }
-
-      if (marLetezo.length > 0) {
-        alert("⚠️ Ezek a visszaigazolások már léteznek és nem kerültek újra mentésre:\n" + marLetezo.join(", "));
-      }
-    };
-
-    ensureTimestamps();
-  </script>
-
-  <script>
-    const dicseretek = [
-      "🟢 Remek munka, igazi profizmus!",
-      "🎯 Tökéletesen pontos komissiózás!",
-      "👏 Nagyot mentél most is!",
-      "🚛 Te vagy a raktár lelke!",
-      "💼 Precíz, mint mindig!",
-      "🔝 Minden főnök ilyen munkatársat akar!",
-      "📦 Úgy pakolsz, mint egy logisztikai ninja!",
-      "⚡️ Gyors és pontos – ez a te védjegyed!",
-      "💪 Erő és ész együtt – gratulálunk!",
-      "⭐️ Tőled indul jól a nap!"
-    ];
-
-    function mutassDicseretet() {
-      const uzenet = dicseretek[Math.floor(Math.random() * dicseretek.length)];
-      const popup = document.createElement("div");
-      popup.textContent = uzenet;
-      Object.assign(popup.style, {
-        position: "fixed",
-        top: "40%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        background: "#d32f2f",
-        color: "white",
-        padding: "20px 30px",
-        borderRadius: "12px",
-        fontSize: "20px",
-        fontWeight: "bold",
-        zIndex: 9999,
-        boxShadow: "0 0 20px rgba(0,0,0,0.3)",
-        animation: "fadeOut 3s forwards"
-      });
-      document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 3000);
+    if (!nev || !vissza) {
+      alert("Kérlek tölts ki minden mezőt!");
+      return;
     }
-  </script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('raktar-service-worker.js')
-          .then(reg => console.log('✅ Service Worker regisztrálva:', reg.scope))
-          .catch(err => console.error('❌ Service Worker hiba:', err));
+    vissza = vissza.split(",").map(s => s.trim());
+    const snapshot = await getDocs(colRef);
+    const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+    const mostFelvitt = [];
+    const marLetezo = [];
+
+    const now = new Date();
+    const formatted = now.toLocaleString("hu-HU");
+
+    for (let szam of vissza) {
+      if (existing.includes(szam)) {
+        marLetezo.push(szam);
+        continue;
+      }
+      await addDoc(colRef, {
+        datum: formatted,
+        nev,
+        visszaigazolas: szam,
+        bevitt: false,
+        timestamp: new Date()
       });
+      mostFelvitt.push(szam);
     }
-  </script>
+
+    document.getElementById("nev").value = "";
+    document.getElementById("visszaigazolas").value = "";
+
+    if (mostFelvitt.length > 0) mutassDicseretet();
+    if (marLetezo.length > 0) {
+      alert("⚠️ Már létező visszaigazolások:\n" + marLetezo.join(", "));
+    }
+  };
+
+  window.startScanner = () => {
+    const readerDiv = document.getElementById("reader");
+    readerDiv.style.display = "block";
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        document.getElementById("visszaigazolas").value = decodedText;
+        html5QrCode.stop();
+        readerDiv.style.display = "none";
+      },
+      (errorMessage) => {}
+    ).catch(err => {
+      console.error("Scan error:", err);
+    });
+  };
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('raktar-service-worker.js')
+        .then(reg => console.log('✅ Service Worker regisztrálva:', reg.scope))
+        .catch(err => console.error('❌ Service Worker hiba:', err));
+    });
+  }
+</script>
 </body>
 </html>
