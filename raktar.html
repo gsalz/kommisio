@@ -268,56 +268,56 @@
       document.getElementById("visszaigazolas").value = "";
     };
   </script>
-  <script>
-    function scanBarcode() {
-      const readerDiv = document.getElementById("reader");
-      readerDiv.style.display = "block";
-      const html5QrCode = new Html5Qrcode("reader");
+<script>
+function scanBarcode() {
+  const readerDiv = document.getElementById("reader");
+  readerDiv.style.display = "block";
+  const html5QrCode = new Html5Qrcode("reader");
 
-      const config = {
-        fps: 10,
-        qrbox: 250,
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.ITF,
-          Html5QrcodeSupportedFormats.AZTEC,
-          Html5QrcodeSupportedFormats.DATA_MATRIX,
-          Html5QrcodeSupportedFormats.PDF_417
-        ]
-      };
+  const config = {
+    fps: 5,
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.ITF,
+      Html5QrcodeSupportedFormats.AZTEC,
+      Html5QrcodeSupportedFormats.DATA_MATRIX,
+      Html5QrcodeSupportedFormats.PDF_417
+    ]
+  };
 
-      html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          document.getElementById("visszaigazolas").value = decodedText;
-          html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-            readerDiv.style.display = "none";
-          });
-        },
-        (error) => {
-          // nem baj, ha nincs olvasás
-        }
-      );
-
-      setTimeout(() => {
-        html5QrCode.stop().then(() => {
-          html5QrCode.clear();
-          readerDiv.style.display = "none";
-          if (!document.getElementById("visszaigazolas").value) {
-            alert("❌ Nem talált vonalkódot!");
-          }
-        });
-      }, 15000); // ⏱️ 15 mp olvasási idő
+  html5QrCode.start(
+    { facingMode: "environment" },
+    config,
+    (decodedText) => {
+      document.getElementById("visszaigazolas").value = decodedText;
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        readerDiv.style.display = "none";
+      });
+    },
+    (error) => {
+      // nem írunk ki semmit, csak próbál tovább
     }
-  </script>
+  );
+
+  setTimeout(() => {
+    html5QrCode.stop().then(() => {
+      html5QrCode.clear();
+      readerDiv.style.display = "none";
+      if (!document.getElementById("visszaigazolas").value) {
+        alert("❌ Nem talált vonalkódot!");
+      }
+    });
+  }, 15000);
+}
+</script>
+
 
   <script>
     if ('serviceWorker' in navigator) {
