@@ -11,8 +11,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Reményi Raktáros" />
-
-  <!-- Vonalkód könyvtár -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
@@ -43,20 +41,20 @@
     }
     .form-row {
       display: flex;
-      align-items: flex-start;
       justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
       gap: 20px;
       margin-bottom: 20px;
-      flex-wrap: wrap;
     }
     .form-image {
-      max-width: 160px;
+      max-width: 140px;
     }
     .form-image img {
       width: 100%;
       height: auto;
-      user-select: none;
       pointer-events: none;
+      user-select: none;
     }
     .form-fields {
       flex: 1;
@@ -71,15 +69,14 @@
       font-size: 14px;
       line-height: 32px;
     }
-    .form-group select,
-    .form-group input {
+    .form-group select, .form-group input {
       flex: 1;
       padding: 8px;
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 6px;
     }
-    .add-btn {
+    .add-btn, .scan-btn {
       width: 100%;
       padding: 10px;
       font-size: 15px;
@@ -91,8 +88,14 @@
       margin-top: 10px;
     }
     #reader {
-      margin-top: 10px;
+      width: 100%;
+      margin: 20px 0;
       display: none;
+    }
+    #scanner-controls {
+      display: none;
+      margin-bottom: 10px;
+      text-align: right;
     }
     table {
       width: 100%;
@@ -115,6 +118,7 @@
     }
   </style>
 </head>
+
 <body>
   <script>
     const helyesJelszo = "remenyi1991";
@@ -141,109 +145,163 @@
     }
     window.addEventListener("load", jelszotKer);
   </script>
-<div class="container">
-  <div class="header">
-    <img src="remenyi.png" alt="Reményi Csomagolástechnika" class="logo" />
-    <h2>Raktáros felület</h2>
+
+  <div class="container">
+    <div class="header">
+      <img src="remenyi.png" alt="Reményi Csomagolástechnika" class="logo" />
+      <h2>Raktáros felület</h2>
+    </div>
+
+    <div class="form-row">
+      <div class="form-image">
+        <img src="image.png" alt="Targonca illusztráció" />
+      </div>
+      <div class="form-fields">
+        <div class="form-group">
+          <label for="nev">Komissiózó</label>
+          <select id="nev">
+            <option value="">Válassz...</option>
+            <option value="Molnár Attila">Molnár Attila</option>
+            <option value="Kovács Szabolcs">Kovács Szabolcs</option>
+            <option value="Lackó István">Lackó István</option>
+            <option value="Czifra Imre">Czifra Imre</option>
+            <option value="Takács József">Takács József</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
+          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+        </div>
+
+        <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
+        <button class="scan-btn" onclick="startScanner()">📷 Vonalkód olvasás</button>
+
+        <div id="scanner-controls">
+          <button onclick="toggleCamera()">🔁 Kamera váltás</button>
+          <button onclick="stopScanner()">❌ Bezárás</button>
+        </div>
+
+        <div id="reader"></div>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Komissiózó</th>
+          <th>Visszaig.szám</th>
+          <th>Bevitt ✅</th>
+          <th>Törlés</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
   </div>
 
-  <div class="form-row">
-    <div class="form-image">
-      <img src="image.png" alt="Targonca illusztráció" />
-    </div>
-    <div class="form-fields">
-      <div class="form-group">
-        <label for="nev">Komissiózó</label>
-        <select id="nev">
-          <option value="">Válassz...</option>
-          <option value="Molnár Attila">Molnár Attila</option>
-          <option value="Kovács Szabolcs">Kovács Szabolcs</option>
-          <option value="Lackó István">Lackó István</option>
-          <option value="Czifra Imre">Czifra Imre</option>
-          <option value="Takács József">Takács József</option>
-        </select>
-      </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, deleteDoc, doc,
+      onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-      <div class="form-group">
-        <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-        <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
-      </div>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
+      authDomain: "remenyikeresztur.firebaseapp.com",
+      projectId: "remenyikeresztur",
+      storageBucket: "remenyikeresztur.firebasestorage.app",
+      messagingSenderId: "981331750744",
+      appId: "1:981331750744:web:d93439261f6c48a6c4bf2d"
+    };
 
-      <button class="add-btn" onclick="startScanner()">📷 Vonalkód olvasás</button>
-      <div id="reader"></div>
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const colRef = collection(db, "komissiozas");
 
-      <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
-    </div>
-  </div>
+    onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
+      const tableBody = document.getElementById("table-body");
+      tableBody.innerHTML = "";
 
-  <table>
-    <thead>
-      <tr>
-        <th>Komissiózó</th>
-        <th>Visszaig.szám</th>
-        <th>Bevitt ✅</th>
-        <th>Törlés</th>
-      </tr>
-    </thead>
-    <tbody id="table-body"></tbody>
-  </table>
-</div>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, deleteDoc, doc,
-    onSnapshot, updateDoc, getDocs, query, orderBy, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBqXYdVxxRfVUrwDsI2VlHQvpdhqr-oe9g",
-    authDomain: "remenyikeresztur.firebaseapp.com",
-    projectId: "remenyikeresztur",
-    storageBucket: "remenyikeresztur.firebasestorage.app",
-    messagingSenderId: "981331750744",
-    appId: "1:981331750744:web:d93439261f6c48a6c4bf2d"
-  };
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        if (!d.timestamp) return;
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const colRef = collection(db, "komissiozas");
+        const docDate = new Date(d.timestamp.toDate ? d.timestamp.toDate() : d.timestamp);
+        docDate.setHours(0, 0, 0, 0);
 
-  onSnapshot(query(colRef, orderBy("timestamp", "asc")), (snapshot) => {
-    const tableBody = document.getElementById("table-body");
-    tableBody.innerHTML = "";
+        if (docDate.getTime() !== today.getTime()) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+        const row = tableBody.insertRow();
+        row.insertCell(0).textContent = d.nev;
+        row.insertCell(1).textContent = d.visszaigazolas;
 
-    snapshot.forEach(docSnap => {
-      const d = docSnap.data();
-      if (!d.timestamp) return;
+        const checkCell = row.insertCell(2);
+        const check = document.createElement("span");
+        check.textContent = d.bevitt ? "✅" : "";
+        checkCell.appendChild(check);
 
-      const docDate = new Date(d.timestamp.toDate ? d.timestamp.toDate() : d.timestamp);
-      docDate.setHours(0, 0, 0, 0);
-      if (docDate.getTime() !== today.getTime()) return;
-
-      const row = tableBody.insertRow();
-      row.insertCell(0).textContent = d.nev;
-      row.insertCell(1).textContent = d.visszaigazolas;
-
-      const checkCell = row.insertCell(2);
-      const check = document.createElement("span");
-      check.textContent = d.bevitt ? "✅" : "";
-      checkCell.appendChild(check);
-
-      const delCell = row.insertCell(3);
-      const btn = document.createElement("button");
-      btn.textContent = "❌";
-      btn.onclick = () => {
-        if (confirm("Biztosan törlöd?")) {
-          deleteDoc(doc(db, "komissiozas", docSnap.id));
-        }
-      };
-      delCell.appendChild(btn);
+        const delCell = row.insertCell(3);
+        const btn = document.createElement("button");
+        btn.textContent = "❌";
+        btn.onclick = () => {
+          if (confirm("Biztosan törlöd?")) {
+            deleteDoc(doc(db, "komissiozas", docSnap.id));
+          }
+        };
+        delCell.appendChild(btn);
+      });
     });
-  });
 
+    window.addItem = async () => {
+      const nev = document.getElementById("nev").value;
+      let vissza = document.getElementById("visszaigazolas").value.trim();
+
+      if (!nev || !vissza) {
+        alert("Kérlek tölts ki minden mezőt!");
+        return;
+      }
+
+      vissza = vissza.split(",").map(s => s.trim());
+      const snapshot = await getDocs(colRef);
+      const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
+
+      const mostFelvitt = [];
+      const marLetezo = [];
+
+      const now = new Date();
+      const formatted = now.toLocaleString("hu-HU");
+
+      for (let szam of vissza) {
+        if (existing.includes(szam)) {
+          marLetezo.push(szam);
+          continue;
+        }
+        await addDoc(colRef, {
+          datum: formatted,
+          nev,
+          visszaigazolas: szam,
+          bevitt: false,
+          timestamp: new Date()
+        });
+        mostFelvitt.push(szam);
+      }
+
+      document.getElementById("nev").value = "";
+      document.getElementById("visszaigazolas").value = "";
+
+      if (mostFelvitt.length > 0) {
+        mutassDicseretet();
+      }
+
+      if (marLetezo.length > 0) {
+        alert("⚠️ Ezek a visszaigazolások már léteznek:\n" + marLetezo.join(", "));
+      }
+    };
+  </script>
+<script>
   const dicseretek = [
     "🟢 Remek munka, igazi profizmus!",
     "🎯 Tökéletesen pontos komissiózás!",
@@ -279,66 +337,51 @@
     document.body.appendChild(popup);
     setTimeout(() => popup.remove(), 3000);
   }
+</script>
 
-  window.addItem = async () => {
-    const nev = document.getElementById("nev").value;
-    let vissza = document.getElementById("visszaigazolas").value.trim();
-
-    if (!nev || !vissza) {
-      alert("Kérlek tölts ki minden mezőt!");
-      return;
-    }
-
-    vissza = vissza.split(",").map(s => s.trim());
-    const snapshot = await getDocs(colRef);
-    const existing = snapshot.docs.map(doc => doc.data().visszaigazolas);
-
-    const mostFelvitt = [];
-    const marLetezo = [];
-
-    const now = new Date();
-    const formatted = now.toLocaleString("hu-HU");
-
-    for (let szam of vissza) {
-      if (existing.includes(szam)) {
-        marLetezo.push(szam);
-        continue;
-      }
-      await addDoc(colRef, {
-        datum: formatted,
-        nev,
-        visszaigazolas: szam,
-        bevitt: false,
-        timestamp: new Date()
-      });
-      mostFelvitt.push(szam);
-    }
-
-    document.getElementById("nev").value = "";
-    document.getElementById("visszaigazolas").value = "";
-
-    if (mostFelvitt.length > 0) mutassDicseretet();
-    if (marLetezo.length > 0) {
-      alert("⚠️ Már létező visszaigazolások:\n" + marLetezo.join(", "));
-    }
-  };
+<script>
+  let currentFacingMode = "environment";
+  let html5QrCode;
 
   window.startScanner = () => {
     const readerDiv = document.getElementById("reader");
+    const controlsDiv = document.getElementById("scanner-controls");
     readerDiv.style.display = "block";
-    const html5QrCode = new Html5Qrcode("reader");
+    controlsDiv.style.display = "block";
+
+    html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
+      { facingMode: currentFacingMode },
+      {
+        fps: 10,
+        qrbox: { width: 300, height: 100 },
+        aspectRatio: 2.0,
+        disableFlip: true
+      },
       (decodedText) => {
         document.getElementById("visszaigazolas").value = decodedText;
-        html5QrCode.stop();
-        readerDiv.style.display = "none";
+        stopScanner();
       },
       (errorMessage) => {}
     ).catch(err => {
       console.error("Scan error:", err);
     });
+  };
+
+  window.stopScanner = () => {
+    if (html5QrCode) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        document.getElementById("reader").style.display = "none";
+        document.getElementById("scanner-controls").style.display = "none";
+      });
+    }
+  };
+
+  window.toggleCamera = () => {
+    currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+    stopScanner();
+    setTimeout(() => startScanner(), 300);
   };
 </script>
 
@@ -351,5 +394,6 @@
     });
   }
 </script>
+
 </body>
 </html>
