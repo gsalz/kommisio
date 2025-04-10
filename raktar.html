@@ -108,11 +108,6 @@
     th {
       background: #f0f0f0;
     }
-    @keyframes fadeOut {
-      0% { opacity: 1; }
-      70% { opacity: 1; }
-      100% { opacity: 0; }
-    }
   </style>
 </head>
 <body>
@@ -166,7 +161,7 @@
         </div>
         <div class="form-group">
           <label for="visszaigazolas">Visszaig.szám (több is, vesszővel)</label>
-          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" />
+          <input type="text" id="visszaigazolas" placeholder="Pl.: 1234, 5678" autofocus />
         </div>
         <button class="add-btn" onclick="addItem()">➕ Hozzáadás</button>
         <button class="search-btn" onclick="scanBarcode()">🔍 Keresés most</button>
@@ -186,7 +181,6 @@
       <tbody id="table-body"></tbody>
     </table>
   </div>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
@@ -268,57 +262,58 @@
       document.getElementById("visszaigazolas").value = "";
     };
   </script>
-<script>
-function scanBarcode() {
-  const readerDiv = document.getElementById("reader");
-  readerDiv.style.display = "block";
-  const html5QrCode = new Html5Qrcode("reader");
+  <script>
+    function scanBarcode() {
+      const readerDiv = document.getElementById("reader");
+      readerDiv.style.display = "block";
+      const html5QrCode = new Html5Qrcode("reader");
 
-  const config = {
-    fps: 5,
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.QR_CODE,
-      Html5QrcodeSupportedFormats.CODE_128,
-      Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.EAN_13,
-      Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.UPC_A,
-      Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.ITF,
-      Html5QrcodeSupportedFormats.AZTEC,
-      Html5QrcodeSupportedFormats.DATA_MATRIX,
-      Html5QrcodeSupportedFormats.PDF_417
-    ]
-  };
+      const config = {
+        fps: 5,
+        qrbox: { width: 300, height: 150 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.PDF_417
+        ]
+      };
 
-  html5QrCode.start(
-    { facingMode: "environment" },
-    config,
-    (decodedText) => {
-      document.getElementById("visszaigazolas").value = decodedText;
-      html5QrCode.stop().then(() => {
-        html5QrCode.clear();
-        readerDiv.style.display = "none";
-      });
-    },
-    (error) => {
-      // nem írunk ki semmit, csak próbál tovább
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          document.getElementById("visszaigazolas").value = decodedText;
+          html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            readerDiv.style.display = "none";
+          });
+        }
+      );
+
+      setTimeout(() => {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          readerDiv.style.display = "none";
+          if (!document.getElementById("visszaigazolas").value) {
+            alert("❌ Nem talált vonalkódot!");
+          }
+        });
+      }, 15000); // 15 mp után leáll
     }
-  );
+  </script>
 
-  setTimeout(() => {
-    html5QrCode.stop().then(() => {
-      html5QrCode.clear();
-      readerDiv.style.display = "none";
-      if (!document.getElementById("visszaigazolas").value) {
-        alert("❌ Nem talált vonalkódot!");
+  <!-- Automatikus mentés Enter-re (pl. Datalogic szkennernél) -->
+  <script>
+    document.getElementById("visszaigazolas").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        addItem(); // automatikus mentés
       }
     });
-  }, 15000);
-}
-</script>
+  </script>
 
-
+  <!-- PWA service worker -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
